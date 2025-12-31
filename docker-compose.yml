@@ -1,0 +1,30 @@
+version: "3.8"
+
+services:
+  mysql:
+    image: library/mysql:8.0.39
+    container_name: remittance-mysql
+    restart: always
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: admin
+      MYSQL_DATABASE: remittance
+      TZ: Asia/Seoul
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_general_ci
+    volumes:
+      - mysql_data:/var/lib/mysql
+  redis:
+    image: redis:7-alpine
+    container_name: remittance-redis
+    restart: always
+    ports:
+      - "6379:6379"
+    command: [ "redis-server", "--appendonly", "yes" ]
+    volumes:
+      - redis_data:/data
+volumes:
+  mysql_data:
+  redis_data:
