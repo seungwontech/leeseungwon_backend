@@ -42,7 +42,7 @@ public class AccountDailyLimitUsage {
     private Long withdrawUsed;
 
     @Column(name = "transfer_used", nullable = false)
-    @Comment("오늘 이체 누적(수수료 제외/포함은 정책으로 통일)")
+    @Comment("오늘 이체 누적")
     private Long transferUsed;
 
     @Column(name = "created_at", nullable = false)

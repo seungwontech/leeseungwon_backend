@@ -18,7 +18,7 @@ public class AccountTest {
 
     @BeforeEach
     void setUp() {
-        LocalDateTime now = LocalDateTime.of(2026, 01, 02, 0, 0);
+        LocalDateTime now = LocalDateTime.of(2026, 1, 2, 0, 0);
         account = new Account(
                 null,
                 UUID.randomUUID().toString(),
