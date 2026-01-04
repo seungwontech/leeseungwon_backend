@@ -131,7 +131,9 @@ public class AccountService {
     }
 
     public TransferResponse transfer(Long fromAccountId, Long toAccountId, Long amount, String transactionId) {
-        if (fromAccountId.equals(toAccountId)) throw new CoreException(ErrorType.SAME_ACCOUNT_TRANSFER, toAccountId);
+        if (fromAccountId.equals(toAccountId)) {
+            throw new CoreException(ErrorType.SAME_ACCOUNT_TRANSFER, toAccountId);
+        }
 
         AccountTransaction transaction = AccountTransaction.transferPending(fromAccountId, toAccountId, transactionId, amount);
 
@@ -165,10 +167,12 @@ public class AccountService {
         fromAccount.withdraw(totalWithdrawAmount);
         toAccount.deposit(amount);
 
+        usage.addTransferUsed(amount);
+
         Account savedFromAccount = accountRepository.save(fromAccount);
         accountRepository.save(toAccount);
 
-        transaction.success(savedFromAccount.getBalance(),1L);
+        transaction.success(savedFromAccount.getBalance(), 1L);
         return TransferResponse.from(transaction);
     }
 }
