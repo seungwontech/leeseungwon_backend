@@ -2,6 +2,8 @@ package com.sw.remittanceservice.account.entity;
 
 import com.sw.remittanceservice.account.entity.enums.AccountTransactionType;
 import com.sw.remittanceservice.account.entity.enums.TransactionStatus;
+import com.sw.remittanceservice.account.usecase.policy.dto.FeeResponse;
+import com.sw.remittanceservice.account.usecase.policy.dto.enums.FeePolicyType;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -46,13 +48,26 @@ public class AccountTransaction {
     @Comment("거래 금액")
     private Long amount;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "fee_policy_type")
+    @Comment("적용된 수수료 정책 타입")
+    private FeePolicyType feePolicyType;
+
     @Column(name = "fee", nullable = false)
-    @Comment("수수료")
+    @Comment("수수료(금액)")
     private Long fee;
 
+    @Column(name = "fee_rate")
+    @Comment("적용된 수수료율")
+    private Double feeRate;
+
+    @Column(name = "fee_applied_at")
+    @Comment("수수료 적용 기준 시각")
+    private LocalDateTime feeAppliedAt;
+
     @Column(name = "target_account_no")
-    @Comment("상대방 계좌번호 (이체 시 필요)")
-    private Long targetAccountId;
+    @Comment("상대방 계좌번호")
+    private Long targetAccountNo;
 
     @Column(name = "balance_after_transaction", nullable = false)
     @Comment("거래 후 잔액")
@@ -74,9 +89,12 @@ public class AccountTransaction {
                 AccountTransactionType.WITHDRAW,
                 TransactionStatus.PENDING,
                 amount,
-                0L,
-                null,
-                0L,
+                null,   // feePolicyType
+                0L,     // fee
+                null,   // feeRate
+                null,   // feeAppliedAt
+                null,   // targetAccountId
+                0L,     // balanceAfterTransaction
                 LocalDateTime.now()
         );
     }
@@ -93,14 +111,15 @@ public class AccountTransaction {
                 AccountTransactionType.DEPOSIT,
                 TransactionStatus.PENDING,
                 amount,
+                null,
                 0L,
+                null,
+                null,
                 null,
                 0L,
                 LocalDateTime.now()
         );
     }
-
-
 
     public static AccountTransaction transferPending(
             Long accountId,
@@ -115,18 +134,28 @@ public class AccountTransaction {
                 AccountTransactionType.TRANSFER,
                 TransactionStatus.PENDING,
                 amount,
+                null,
                 0L,
+                null,
+                null,
                 targetAccountId,
                 0L,
                 LocalDateTime.now()
         );
     }
 
+    public void success(long balanceAfter) {
+        this.transactionStatus = TransactionStatus.SUCCESS;
+        this.balanceAfterTransaction = balanceAfter;
+        this.fee = 0L;
+    }
 
-    public void success(long balanceAfter, long fee) {
+    public void success(long balanceAfter, long fee, FeeResponse feeResponse) {
         this.transactionStatus = TransactionStatus.SUCCESS;
         this.balanceAfterTransaction = balanceAfter;
         this.fee = fee;
+        this.feePolicyType = feeResponse.type();
+        this.feeRate = feeResponse.rate();
+        this.feeAppliedAt = LocalDateTime.now();
     }
-
 }

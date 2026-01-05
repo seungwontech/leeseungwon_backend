@@ -24,6 +24,6 @@ public class DefaultFeeCalculator implements FeeCalculator {
     @Override
     public FeeResponse calculate(FeeRequest request) {
         long fee = (long) (request.amount() * RATE);
-        return new FeeResponse(FeePolicyType.DEFAULT, RATE, fee);
+        return new FeeResponse(FeePolicyType.DEFAULT, RATE, fee, request.requestedAt());
     }
 }

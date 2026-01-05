@@ -25,11 +25,10 @@ public class DepositUseCase {
         AccountTransaction transaction = AccountTransaction.depositPending(accountId, transactionId, amount);
 
 
-        if (transactionRedisRepository.isLocked(transactionId, 1)) {
-            AccountTransaction existing = accountTransactionRepository.findByTransactionId(transactionId)
-                    .orElse(transaction);
-
-            return AccountTransactionResponse.from(existing);
+        if (!transactionRedisRepository.tryLock(transactionId, 1)) {
+            return AccountTransactionResponse.from(
+                    accountTransactionRepository.findByTransactionId(transactionId).orElse(transaction)
+            );
         }
 
         accountTransactionRepository.save(transaction);
@@ -42,7 +41,7 @@ public class DepositUseCase {
                 account.deposit(amount)
         );
 
-        transaction.success(savedAccount.getBalance(), 0L);
+        transaction.success(savedAccount.getBalance());
 
         return AccountTransactionResponse.from(transaction);
     }

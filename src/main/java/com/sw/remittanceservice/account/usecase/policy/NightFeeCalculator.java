@@ -28,6 +28,6 @@ public class NightFeeCalculator implements FeeCalculator {
     @Override
     public FeeResponse calculate(FeeRequest request) {
         long fee = (long) (request.amount() * RATE);
-        return new FeeResponse(FeePolicyType.NIGHT, RATE, fee);
+        return new FeeResponse(FeePolicyType.NIGHT, RATE, fee, request.requestedAt());
     }
 }
