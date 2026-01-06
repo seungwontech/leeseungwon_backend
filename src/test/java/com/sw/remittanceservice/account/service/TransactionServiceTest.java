@@ -47,8 +47,7 @@ class TransactionServiceTest {
         Long pageSize = 10L;
 
         Long accountId = 1L;
-        Long offset = (page - 1) * pageSize; // 0
-        // 10
+        Long offset = (page - 1) * pageSize;
         Long countLimit = PageLimitCalculator.calculatePageLimit(page, pageSize, 10L);
 
 
