@@ -1,7 +1,7 @@
 package com.sw.remittanceservice.account.entity;
 
-import com.sw.remittanceservice.account.entity.enums.AccountTransactionType;
 import com.sw.remittanceservice.account.entity.enums.TransactionStatus;
+import com.sw.remittanceservice.account.entity.enums.TransactionType;
 import com.sw.remittanceservice.account.usecase.policy.dto.FeeResponse;
 import com.sw.remittanceservice.account.usecase.policy.dto.enums.FeePolicyType;
 import jakarta.persistence.*;
@@ -17,31 +17,31 @@ import java.time.LocalDateTime;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
 @Entity
-@Table(name = "account_transaction")
-public class AccountTransaction {
+@Table(name = "transaction")
+public class Transaction {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "account_transaction_id")
-    @Comment("계좌 내역 아이디")
-    private Long accountTransactionId;
+    @Column(name = "transaction_id")
+    @Comment("거래 아이디")
+    private Long transactionId;
 
     @Column(name = "account_id")
     @Comment("계좌 아이디")
     private Long accountId;
 
-    @Column(name = "transaction_id", nullable = false, unique = true)
-    @Comment("거래 아이디")
-    private String transactionId;
+    @Column(name = "transaction_request_id", nullable = false, unique = true)
+    @Comment("거래 요청 식별자 (중복 방지용)")
+    private String transactionRequestId;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "account_transaction_type", nullable = false)
-    @Comment("계좌 거래 유형")
-    private AccountTransactionType accountTransactionType;
+    @Column(name = "transaction_type", nullable = false)
+    @Comment("거래 유형")
+    private TransactionType transactionType;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "transaction_status", nullable = false)
-    @Comment("계좌 거래 상태")
+    @Comment("거래 상태")
     private TransactionStatus transactionStatus;
 
     @Column(name = "amount", nullable = false)
@@ -77,38 +77,16 @@ public class AccountTransaction {
     @Comment("생성 일시")
     private LocalDateTime createdAt;
 
-    public static AccountTransaction withdrawPending(
+    public static Transaction withdrawPending(
             Long accountId,
-            String transactionId,
+            String transactionRequestId,
             Long amount
     ) {
-        return new AccountTransaction(
+        return new Transaction(
                 null,
                 accountId,
-                transactionId,
-                AccountTransactionType.WITHDRAW,
-                TransactionStatus.PENDING,
-                amount,
-                null,   // feePolicyType
-                0L,     // fee
-                null,   // feeRate
-                null,   // feeAppliedAt
-                null,   // targetAccountId
-                0L,     // balanceAfterTransaction
-                LocalDateTime.now()
-        );
-    }
-
-    public static AccountTransaction depositPending(
-            Long accountId,
-            String transactionId,
-            Long amount
-    ) {
-        return new AccountTransaction(
-                null,
-                accountId,
-                transactionId,
-                AccountTransactionType.DEPOSIT,
+                transactionRequestId,
+                TransactionType.WITHDRAW,
                 TransactionStatus.PENDING,
                 amount,
                 null,
@@ -121,17 +99,39 @@ public class AccountTransaction {
         );
     }
 
-    public static AccountTransaction transferPending(
+    public static Transaction depositPending(
+            Long accountId,
+            String transactionRequestId,
+            Long amount
+    ) {
+        return new Transaction(
+                null,
+                accountId,
+                transactionRequestId,
+                TransactionType.DEPOSIT,
+                TransactionStatus.PENDING,
+                amount,
+                null,
+                0L,
+                null,
+                null,
+                null,
+                0L,
+                LocalDateTime.now()
+        );
+    }
+
+    public static Transaction transferPending(
             Long accountId,
             Long targetAccountId,
-            String transactionId,
+            String transactionRequestId,
             Long amount
     ) {
-        return new AccountTransaction(
+        return new Transaction(
                 null,
                 accountId,
-                transactionId,
-                AccountTransactionType.TRANSFER,
+                transactionRequestId,
+                TransactionType.TRANSFER,
                 TransactionStatus.PENDING,
                 amount,
                 null,
