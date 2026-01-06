@@ -22,9 +22,9 @@ public class AccountController {
     private final WithdrawUseCase withdrawUseCase;
 
 
-    @GetMapping("/api/accounts/{accountId}")
-    public ResponseEntity<AccountResponse> read(@PathVariable Long accountId) {
-        return ResponseEntity.ok(accountService.read(accountId));
+    @GetMapping("/api/accounts/{accountNo}")
+    public ResponseEntity<AccountResponse> read(@PathVariable String accountNo) {
+        return ResponseEntity.ok(accountService.read(accountNo));
     }
 
     @PostMapping("/api/accounts")
@@ -32,33 +32,33 @@ public class AccountController {
         return ResponseEntity.ok(accountService.create(request));
     }
 
-    @DeleteMapping("/api/accounts/{accountId}")
-    public ResponseEntity<Void> delete(@PathVariable Long accountId) {
-        accountService.delete(accountId);
+    @DeleteMapping("/api/accounts/{accountNo}")
+    public ResponseEntity<Void> delete(@PathVariable String accountNo) {
+        accountService.delete(accountNo);
         return ResponseEntity.noContent().build();
     }
 
 
-    @PostMapping("/api/accounts/{accountId}/withdraw")
-    public ResponseEntity<AccountTransactionResponse> withdraw(
-            @PathVariable Long accountId,
+    @PostMapping("/api/accounts/{accountNo}/withdraw")
+    public ResponseEntity<TransactionResponse> withdraw(
+            @PathVariable Long accountNo,
             @RequestBody AccountAmountRequest request
     ) {
-        return ResponseEntity.ok(withdrawUseCase.execute(accountId, request.amount(), request.transactionId()));
+        return ResponseEntity.ok(withdrawUseCase.execute(accountNo, request.amount(), request.transactionRequestId()));
     }
 
-    @PostMapping("/api/accounts/{accountId}/deposit")
-    public ResponseEntity<AccountTransactionResponse> deposit(
-            @PathVariable Long accountId,
+    @PostMapping("/api/accounts/{accountNo}/deposit")
+    public ResponseEntity<TransactionResponse> deposit(
+            @PathVariable Long accountNo,
             @RequestBody AccountAmountRequest request)
     {
-        return ResponseEntity.ok(depositUseCase.execute(accountId, request.amount(), request.transactionId()));
+        return ResponseEntity.ok(depositUseCase.execute(accountNo, request.amount(), request.transactionRequestId()));
     }
 
 
     @PostMapping("/api/transfers")
     public ResponseEntity<TransferResponse> transfer(@RequestBody TransferRequest request) {
-        return ResponseEntity.ok(transferUseCase.execute(request.fromAccountId(), request.toAccountId(), request.amount(), request.transactionId()));
+        return ResponseEntity.ok(transferUseCase.execute(request.fromAccountId(), request.toAccountNo(), request.amount(), request.transactionId()));
     }
 
 }

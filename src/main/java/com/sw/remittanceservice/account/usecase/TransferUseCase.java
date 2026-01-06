@@ -4,7 +4,7 @@ import com.sw.remittanceservice.account.dto.TransferResponse;
 import com.sw.remittanceservice.account.entity.Account;
 import com.sw.remittanceservice.account.entity.AccountDailyLimitUsage;
 import com.sw.remittanceservice.account.entity.AccountLimitSetting;
-import com.sw.remittanceservice.account.entity.AccountTransaction;
+import com.sw.remittanceservice.account.entity.Transaction;
 import com.sw.remittanceservice.account.repository.*;
 import com.sw.remittanceservice.account.usecase.policy.FeeCalculatorFinder;
 import com.sw.remittanceservice.account.usecase.policy.dto.FeeRequest;
@@ -25,7 +25,7 @@ public class TransferUseCase {
 
     private final AccountRepository accountRepository;
 
-    private final AccountTransactionRepository accountTransactionRepository;
+    private final TransactionRepository accountTransactionRepository;
 
     private final TransactionRedisRepository transactionRedisRepository;
 
@@ -36,16 +36,17 @@ public class TransferUseCase {
     private final FeeCalculatorFinder feeCalculatorFinder;
 
     @Transactional
-    public TransferResponse execute(Long fromAccountId, Long toAccountId, Long amount, String transactionId) {
+    public TransferResponse execute(Long fromAccountId, Long toAccountId, Long amount, String transactionRequestId) {
+
         if (fromAccountId.equals(toAccountId)) {
             throw new CoreException(ErrorType.SAME_ACCOUNT_TRANSFER, toAccountId);
         }
 
-        AccountTransaction transaction = AccountTransaction.transferPending(fromAccountId, toAccountId, transactionId, amount);
+        Transaction transaction = Transaction.transferPending(fromAccountId, toAccountId, transactionRequestId, amount);
 
-        if (!transactionRedisRepository.tryLock(transactionId, 1)) {
+        if (!transactionRedisRepository.tryLock(transactionRequestId, 1)) {
             return TransferResponse.from(
-                    accountTransactionRepository.findByTransactionId(transactionId).orElse(transaction)
+                    accountTransactionRepository.findByTransactionRequestId(transactionRequestId).orElse(transaction)
             );
         }
 

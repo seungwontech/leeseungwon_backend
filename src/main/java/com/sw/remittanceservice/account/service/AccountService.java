@@ -21,12 +21,12 @@ public class AccountService {
 
     private final AccountLimitSettingRepository accountLimitSettingRepository;
 
-    public AccountResponse read(Long accountId) {
-        Account account = accountRepository.findById(accountId)
-                .orElseThrow(() -> new CoreException(ErrorType.ACCOUNT_NOT_FOUND, accountId));
+    public AccountResponse read(String accountNo) {
+        Account account = accountRepository.findByAccountNo(accountNo)
+                .orElseThrow(() -> new CoreException(ErrorType.ACCOUNT_NOT_FOUND, accountNo));
 
         AccountLimitSetting setting = accountLimitSettingRepository.findByAccountId(account.getAccountId())
-                .orElseThrow(() -> new CoreException(ErrorType.ACCOUNT_LIMIT_SETTING_NOT_FOUND, accountId));
+                .orElseThrow(() -> new CoreException(ErrorType.ACCOUNT_LIMIT_SETTING_NOT_FOUND, accountNo));
 
         return AccountResponse.from(account, setting.getDailyWithdrawLimit(), setting.getDailyTransferLimit());
     }
@@ -46,10 +46,9 @@ public class AccountService {
     }
 
     @Transactional
-    public void delete(Long accountId) {
-        Account account = accountRepository.findById(accountId)
-                .orElseThrow(() -> new CoreException(ErrorType.ACCOUNT_NOT_FOUND, accountId));
-
-        account.close();
+    public void delete(String accountNo) {
+        accountRepository.findByAccountNo(accountNo)
+                .orElseThrow(() -> new CoreException(ErrorType.ACCOUNT_NOT_FOUND, accountNo))
+                .close();
     }
 }

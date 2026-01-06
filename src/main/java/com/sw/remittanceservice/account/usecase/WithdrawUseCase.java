@@ -1,10 +1,10 @@
 package com.sw.remittanceservice.account.usecase;
 
-import com.sw.remittanceservice.account.dto.AccountTransactionResponse;
+import com.sw.remittanceservice.account.dto.TransactionResponse;
 import com.sw.remittanceservice.account.entity.Account;
 import com.sw.remittanceservice.account.entity.AccountDailyLimitUsage;
 import com.sw.remittanceservice.account.entity.AccountLimitSetting;
-import com.sw.remittanceservice.account.entity.AccountTransaction;
+import com.sw.remittanceservice.account.entity.Transaction;
 import com.sw.remittanceservice.account.repository.*;
 import com.sw.remittanceservice.common.exception.CoreException;
 import com.sw.remittanceservice.common.exception.ErrorType;
@@ -20,7 +20,7 @@ public class WithdrawUseCase {
 
     private final AccountRepository accountRepository;
 
-    private final AccountTransactionRepository accountTransactionRepository;
+    private final TransactionRepository accountTransactionRepository;
 
     private final TransactionRedisRepository transactionRedisRepository;
 
@@ -29,13 +29,13 @@ public class WithdrawUseCase {
     private final AccountDailyLimitUsageRepository accountDailyLimitUsageRepository;
 
     @Transactional
-    public AccountTransactionResponse execute(Long accountId, Long amount, String transactionId) {
+    public TransactionResponse execute(Long accountId, Long amount, String transactionRequestId) {
 
-        AccountTransaction transaction = AccountTransaction.withdrawPending(accountId, transactionId, amount);
+        Transaction transaction = Transaction.withdrawPending(accountId, transactionRequestId, amount);
 
-        if (!transactionRedisRepository.tryLock(transactionId, 1)) {
-            return AccountTransactionResponse.from(
-                    accountTransactionRepository.findByTransactionId(transactionId).orElse(transaction)
+        if (!transactionRedisRepository.tryLock(transactionRequestId, 1)) {
+            return TransactionResponse.from(
+                    accountTransactionRepository.findByTransactionRequestId(transactionRequestId).orElse(transaction)
             );
         }
 
@@ -61,7 +61,7 @@ public class WithdrawUseCase {
 
         transaction.success(savedAccount.getBalance());
 
-        return AccountTransactionResponse.from(transaction);
+        return TransactionResponse.from(transaction);
     }
 
     private AccountDailyLimitUsage getOrCreateUsage(Long accountId, LocalDate today) {

@@ -1,11 +1,11 @@
-package com.sw.remittanceservice.account.service;
+package com.sw.remittanceservice.account.usecase;
 
 import com.sw.remittanceservice.account.entity.Account;
 import com.sw.remittanceservice.account.entity.AccountLimitSetting;
 import com.sw.remittanceservice.account.entity.enums.AccountStatus;
 import com.sw.remittanceservice.account.repository.AccountLimitSettingRepository;
 import com.sw.remittanceservice.account.repository.AccountRepository;
-import com.sw.remittanceservice.account.repository.AccountTransactionRepository;
+import com.sw.remittanceservice.account.repository.TransactionRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -22,7 +22,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 @SpringBootTest
-public class AccountServiceConcurrencyTest {
+public class WithdrawUseCaseConcurrencyTest {
 
     @Autowired
     AccountRepository accountRepository;
@@ -31,10 +31,10 @@ public class AccountServiceConcurrencyTest {
     AccountLimitSettingRepository accountLimitSettingRepository;
 
     @Autowired
-    AccountTransactionRepository accountTransactionRepository;
+    TransactionRepository accountTransactionRepository;
 
     @Autowired
-    AccountService accountService;
+    WithdrawUseCase withdrawUseCase;
 
     private Long accountId;
     private final long balance = 1_000_000L;       // 100만원
@@ -79,7 +79,7 @@ public class AccountServiceConcurrencyTest {
                 try {
                     readyLatch.countDown();
                     startLatch.await();
-                    accountService.withdraw(accountId, withdrawAmount, String.valueOf(UUID.randomUUID()));
+                    withdrawUseCase.execute(accountId, withdrawAmount, String.valueOf(UUID.randomUUID()));
                     success.incrementAndGet();
                 } catch (Exception e) {
                     System.out.println(e);

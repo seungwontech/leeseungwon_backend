@@ -75,7 +75,6 @@ class AccountServiceTest {
 
         // Then
         assertThat(response).isNotNull();
-        assertThat(response.accountId()).isEqualTo(1L);
         assertThat(response.balance()).isEqualTo(0L);
         assertThat(response.accountStatus()).isEqualTo(AccountStatus.ACTIVE.name());
         assertThat(response.dailyWithdrawLimit()).isEqualTo(1_000_000L);
@@ -90,22 +89,21 @@ class AccountServiceTest {
     @DisplayName("계좌 조회 성공")
     void read_account_success() {
 
-        // Give
+        // Given
         Long accountId = 1L;
-        LocalDateTime now = LocalDateTime.of(2026, 1, 1, 0, 0);
+        String accountNo = UUID.randomUUID().toString();
 
-
-        Account account = new Account(
+        LocalDateTime now = LocalDateTime.of(2025, 12, 30, 0, 0);
+        Account savedAccount = new Account(
                 accountId,
-                UUID.randomUUID().toString(),
+                accountNo,
                 10_000L,
                 AccountStatus.ACTIVE,
                 now,
                 now
         );
 
-
-        AccountLimitSetting setting = new AccountLimitSetting(
+        AccountLimitSetting savedSetting = new AccountLimitSetting(
                 1L,
                 accountId,
                 1_000_000L,
@@ -113,21 +111,20 @@ class AccountServiceTest {
                 now,
                 now
         );
-        given(accountRepository.findById(accountId)).willReturn(Optional.of(account));
-        given(accountLimitSettingRepository.findByAccountId(accountId)).willReturn(Optional.of(setting));
+        given(accountRepository.findByAccountNo(accountNo)).willReturn(Optional.of(savedAccount));
+        given(accountLimitSettingRepository.findByAccountId(accountId)).willReturn(Optional.of(savedSetting));
 
 
         // When
-        AccountResponse response = accountService.read(accountId);
+        AccountResponse response = accountService.read(accountNo);
 
         // Then
-        assertThat(response.accountId()).isEqualTo(accountId);
         assertThat(response.balance()).isEqualTo(10_000L);
         assertThat(response.accountStatus()).isEqualTo(AccountStatus.ACTIVE.name());
         assertThat(response.dailyWithdrawLimit()).isEqualTo(1_000_000L);
         assertThat(response.dailyTransferLimit()).isEqualTo(3_000_000L);
 
-        verify(accountRepository, times(1)).findById(accountId);
+        verify(accountRepository, times(1)).findByAccountNo(accountNo);
         verify(accountLimitSettingRepository, times(1)).findByAccountId(accountId);
     }
 
@@ -135,17 +132,17 @@ class AccountServiceTest {
     @DisplayName("계좌 조회 실패 - 계좌 없음")
     void read_account_fail_account_not_found() {
         // Given
-        Long accountId = 999L;
-        given(accountRepository.findById(accountId)).willReturn(Optional.empty());
+        String accountNo = UUID.randomUUID().toString();
+        given(accountRepository.findByAccountNo(accountNo)).willReturn(Optional.empty());
 
 
         // When/Then
         CoreException e = assertThrows(CoreException.class, () -> {
-            accountService.read(accountId);
+            accountService.read(accountNo);
         });
 
         assertThat(e.getErrorType()).isEqualTo(ErrorType.ACCOUNT_NOT_FOUND);
-        verify(accountRepository, times(1)).findById(accountId);
+        verify(accountRepository, times(1)).findByAccountNo(accountNo);
         verify(accountLimitSettingRepository, never()).findByAccountId(any());
     }
 
@@ -153,27 +150,20 @@ class AccountServiceTest {
     @DisplayName("계좌 조회 실패 - 한도 설정 없음")
     void read_account_fail_limit_setting_not_found() {
         // Given
+        String accountNo = UUID.randomUUID().toString();
         Long accountId = 1L;
-        LocalDateTime now = LocalDateTime.of(2026, 1, 1, 0, 0);
 
+        Account account = mock(Account.class);
+        given(account.getAccountId()).willReturn(accountId);
 
-        Account account = new Account(
-                accountId,
-                UUID.randomUUID().toString(),
-                10_000L,
-                AccountStatus.ACTIVE,
-                now,
-                now
-        );
-
-        given(accountRepository.findById(accountId)).willReturn(Optional.of(account));
+        given(accountRepository.findByAccountNo(accountNo)).willReturn(Optional.of(account));
         given(accountLimitSettingRepository.findByAccountId(accountId)).willReturn(Optional.empty());
 
         // When/Then
-        CoreException e = assertThrows(CoreException.class, () -> accountService.read(accountId));
+        CoreException e = assertThrows(CoreException.class, () -> accountService.read(accountNo));
 
         assertThat(e.getErrorType()).isEqualTo(ErrorType.ACCOUNT_LIMIT_SETTING_NOT_FOUND);
-        verify(accountRepository, times(1)).findById(accountId);
+        verify(accountRepository, times(1)).findByAccountNo(accountNo);
         verify(accountLimitSettingRepository, times(1)).findByAccountId(accountId);
     }
 
@@ -181,25 +171,15 @@ class AccountServiceTest {
     @DisplayName("계좌 삭제 성공")
     void delete_account_success() {
         // Given
-        Long accountId = 1L;
-        LocalDateTime now = LocalDateTime.of(2026, 1, 1, 0, 0);
-
-        Account account = spy(new Account(
-                accountId,
-                UUID.randomUUID().toString(),
-                10_000L,
-                AccountStatus.ACTIVE,
-                now,
-                now
-        ));
-
-        given(accountRepository.findById(accountId)).willReturn(Optional.of(account));
+        String accountNo = UUID.randomUUID().toString();
+        Account account = mock(Account.class);
+        given(accountRepository.findByAccountNo(accountNo)).willReturn(Optional.of(account));
 
         // When
-        accountService.delete(accountId);
+        accountService.delete(accountNo);
 
         // Then
-        verify(accountRepository, times(1)).findById(accountId);
+        verify(accountRepository, times(1)).findByAccountNo(accountNo);
         verify(account, times(1)).close();
     }
 
@@ -207,13 +187,15 @@ class AccountServiceTest {
     @DisplayName("계좌 삭제 실패 - 계좌 없음")
     void delete_account_fail_account_not_found() {
         // Given
-        Long accountId = 999L;
-        given(accountRepository.findById(accountId)).willReturn(Optional.empty());
+        String accountNo = UUID.randomUUID().toString();
+        Account account = mock(Account.class);
+        given(accountRepository.findByAccountNo(accountNo)).willReturn(Optional.empty());
 
         // When/Then
-        CoreException e = assertThrows(CoreException.class, () -> accountService.delete(accountId));
+        CoreException e = assertThrows(CoreException.class, () -> accountService.delete(accountNo));
         assertThat(e.getErrorType()).isEqualTo(ErrorType.ACCOUNT_NOT_FOUND);
 
-        verify(accountRepository, times(1)).findById(accountId);
+        verify(accountRepository, times(1)).findByAccountNo(accountNo);
+        verify(account, never()).close();
     }
 }

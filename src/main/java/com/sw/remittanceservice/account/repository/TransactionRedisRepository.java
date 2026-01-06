@@ -13,15 +13,15 @@ public class TransactionRedisRepository {
 
     private final StringRedisTemplate redisTemplate;
 
-    private static final String TRANSACTION_ID_KEY_FORMAT = "transaction-id-lock::%s";
+    private static final String TRANSACTION_REQUEST_ID_KEY_FORMAT = "transaction-request-id-lock::%s";
 
 
-    private String generateKey(String transactionId) {
-        return TRANSACTION_ID_KEY_FORMAT.formatted(transactionId);
+    private String generateKey(String transactionRequestId) {
+        return TRANSACTION_REQUEST_ID_KEY_FORMAT.formatted(transactionRequestId);
     }
 
-    public boolean tryLock(String transactionId, long ttlSeconds) {
-        String key = generateKey(transactionId);
+    public boolean tryLock(String transactionRequestId, long ttlSeconds) {
+        String key = generateKey(transactionRequestId);
         return Boolean.TRUE.equals(
                 redisTemplate.opsForValue().setIfAbsent(key, TransactionStatus.PENDING.name(), Duration.ofSeconds(ttlSeconds))
         );

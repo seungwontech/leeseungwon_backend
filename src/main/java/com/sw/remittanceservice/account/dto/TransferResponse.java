@@ -1,17 +1,17 @@
 package com.sw.remittanceservice.account.dto;
 
-import com.sw.remittanceservice.account.entity.AccountTransaction;
+import com.sw.remittanceservice.account.entity.Transaction;
 
 public record TransferResponse(
         Long fromAccountId,
-        Long toAccountId,
+        Long toAccountNo,
         Long amount,
         Long fee,
         Double feeRate,
         Long balanceAfterTransaction,
         String transactionStatus) {
 
-    public static TransferResponse from(AccountTransaction entity) {
+    public static TransferResponse from(Transaction entity) {
         return new TransferResponse(
                 entity.getAccountId(),
                 entity.getTargetAccountNo(),

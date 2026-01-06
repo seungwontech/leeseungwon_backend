@@ -13,7 +13,7 @@ public record AccountResponse(
         return new AccountResponse(
                 entity.getAccountNo(),
                 entity.getBalance(),
-                entity.getAccountStatus().name(),
+                entity.getAccountStatus().toString(),
                 dailyWithdrawLimit,
                 dailyTransferLimit
         );

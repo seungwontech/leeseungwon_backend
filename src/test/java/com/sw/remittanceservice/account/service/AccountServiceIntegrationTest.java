@@ -32,21 +32,19 @@ class AccountServiceIntegrationTest {
     @Test
     @DisplayName("계좌 개설")
     void create_account() {
-
         AccountCreateRequest request = new AccountCreateRequest();
-        
         // When
         AccountResponse response = accountService.create(request);
 
         // Then
         assertThat(response).isNotNull();
-        assertThat(response.accountId()).isNotNull();
+        assertThat(response.accountNo()).isNotNull();
         assertThat(response.balance()).isEqualTo(0L);
         assertThat(response.accountStatus()).isEqualTo(AccountStatus.ACTIVE.name());
         assertThat(response.dailyWithdrawLimit()).isEqualTo(1_000_000L);
         assertThat(response.dailyTransferLimit()).isEqualTo(3_000_000L);
 
-        Account account = accountRepository.findById(response.accountId()).orElseThrow();
+        Account account = accountRepository.findByAccountNo(response.accountNo()).orElseThrow();
         assertThat(account.getAccountStatus()).isEqualTo(AccountStatus.ACTIVE);
         assertThat(account.getBalance()).isEqualTo(0L);
         assertThat(account.getAccountNo()).isNotBlank();

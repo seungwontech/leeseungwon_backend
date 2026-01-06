@@ -1,11 +1,11 @@
-package com.sw.remittanceservice.account.service;
+package com.sw.remittanceservice.account.usecase;
 
 import com.sw.remittanceservice.account.entity.Account;
 import com.sw.remittanceservice.account.entity.AccountLimitSetting;
 import com.sw.remittanceservice.account.entity.enums.AccountStatus;
 import com.sw.remittanceservice.account.repository.AccountLimitSettingRepository;
 import com.sw.remittanceservice.account.repository.AccountRepository;
-import com.sw.remittanceservice.account.repository.AccountTransactionRepository;
+import com.sw.remittanceservice.account.repository.TransactionRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -22,7 +22,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 @SpringBootTest
-public class AccountServiceIdempotentTest {
+public class WithdrawUseCaseIdempotentTest {
 
     @Autowired
     AccountRepository accountRepository;
@@ -31,10 +31,10 @@ public class AccountServiceIdempotentTest {
     AccountLimitSettingRepository accountLimitSettingRepository;
 
     @Autowired
-    AccountTransactionRepository accountTransactionRepository;
+    TransactionRepository accountTransactionRepository;
 
     @Autowired
-    AccountService accountService;
+    WithdrawUseCase withdrawUseCase;
 
     private Long accountId;
     private final long balance = 100_000;       // 10만원
@@ -82,7 +82,7 @@ public class AccountServiceIdempotentTest {
                 try {
                     readyLatch.countDown();
                     startLatch.await();
-                    accountService.withdraw(accountId, withdrawAmount, sameTransactionId);
+                    withdrawUseCase.execute(accountId, withdrawAmount, sameTransactionId);
                     success.incrementAndGet();
                 } catch (Exception e) {
                     fail.incrementAndGet();
@@ -98,13 +98,13 @@ public class AccountServiceIdempotentTest {
 
         Account result = accountRepository.findById(accountId).orElseThrow();
         long historyCount = accountTransactionRepository.count();
-        boolean txExists = accountTransactionRepository.findByTransactionId(sameTransactionId).isPresent();
+        boolean txExists = accountTransactionRepository.findByTransactionRequestId(sameTransactionId).isPresent();
 
         assertThat(result.getBalance()).isEqualTo(balance - withdrawAmount);
 
         assertThat(fail.get()).isEqualTo(0);
         assertThat(accountTransactionRepository.count()).isEqualTo(1);
-        assertThat(accountTransactionRepository.findByTransactionId(sameTransactionId)).isPresent();
+        assertThat(accountTransactionRepository.findByTransactionRequestId(sameTransactionId)).isPresent();
 
         System.out.println("========================================");
         System.out.println("[TEST_END]");
