@@ -29,23 +29,21 @@ public class WithdrawUseCase {
     private final AccountDailyLimitUsageRepository accountDailyLimitUsageRepository;
 
     @Transactional
-    public TransactionResponse execute(Long accountId, Long amount, String transactionRequestId) {
-
-        Transaction transaction = Transaction.withdrawPending(accountId, transactionRequestId, amount);
+    public TransactionResponse execute(String accountNo, Long amount, String transactionRequestId) {
 
         if (!transactionRedisRepository.tryLock(transactionRequestId, 1)) {
-            return TransactionResponse.from(
-                    accountTransactionRepository.findByTransactionRequestId(transactionRequestId).orElse(transaction)
-            );
+            Transaction transaction = accountTransactionRepository.findByTransactionRequestId(transactionRequestId)
+                    .orElse(Transaction.init(transactionRequestId, amount));
+            return TransactionResponse.from(transaction);
         }
 
-        accountTransactionRepository.save(transaction);
+        Account lockedAccount = accountRepository.findLockedByAccountNo(accountNo)
+                .orElseThrow(() -> new CoreException(ErrorType.ACCOUNT_NOT_FOUND, accountNo));
+
+        Long accountId = lockedAccount.getAccountId();
 
         AccountLimitSetting setting = accountLimitSettingRepository.findByAccountId(accountId)
                 .orElseThrow(() -> new CoreException(ErrorType.ACCOUNT_LIMIT_SETTING_NOT_FOUND, accountId));
-
-        Account account = accountRepository.findLockedByAccountId(accountId)
-                .orElseThrow(() -> new CoreException(ErrorType.ACCOUNT_NOT_FOUND, accountId));
 
         AccountDailyLimitUsage usage = getOrCreateUsage(accountId, LocalDate.now());
 
@@ -54,12 +52,11 @@ public class WithdrawUseCase {
         }
 
         usage.addWithdrawUsed(amount);
+        Account savedAccount = accountRepository.save(lockedAccount.withdraw(amount));
 
-        Account savedAccount = accountRepository.save(
-                account.withdraw(amount)
+        Transaction transaction = accountTransactionRepository.save(
+                Transaction.create(accountId, transactionRequestId, amount, savedAccount.getBalance())
         );
-
-        transaction.success(savedAccount.getBalance());
 
         return TransactionResponse.from(transaction);
     }
@@ -68,5 +65,4 @@ public class WithdrawUseCase {
         return accountDailyLimitUsageRepository.findByAccountIdAndLimitDate(accountId, today)
                 .orElseGet(() -> accountDailyLimitUsageRepository.save(AccountDailyLimitUsage.init(accountId, today)));
     }
-
 }

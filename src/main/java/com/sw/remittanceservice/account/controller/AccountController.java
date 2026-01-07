@@ -41,7 +41,7 @@ public class AccountController {
 
     @PostMapping("/api/accounts/{accountNo}/withdraw")
     public ResponseEntity<TransactionResponse> withdraw(
-            @PathVariable Long accountNo,
+            @PathVariable String accountNo,
             @RequestBody AccountAmountRequest request
     ) {
         return ResponseEntity.ok(withdrawUseCase.execute(accountNo, request.amount(), request.transactionRequestId()));

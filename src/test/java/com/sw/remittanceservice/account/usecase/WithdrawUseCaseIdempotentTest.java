@@ -2,6 +2,7 @@ package com.sw.remittanceservice.account.usecase;
 
 import com.sw.remittanceservice.account.entity.Account;
 import com.sw.remittanceservice.account.entity.AccountLimitSetting;
+import com.sw.remittanceservice.account.entity.Transaction;
 import com.sw.remittanceservice.account.entity.enums.AccountStatus;
 import com.sw.remittanceservice.account.repository.AccountLimitSettingRepository;
 import com.sw.remittanceservice.account.repository.AccountRepository;
@@ -36,6 +37,7 @@ public class WithdrawUseCaseIdempotentTest {
     @Autowired
     WithdrawUseCase withdrawUseCase;
 
+    private String accountNo;
     private Long accountId;
     private final long balance = 100_000;       // 10만원
     private final long withdrawAmount = 5_000L;   // 5천원
@@ -45,7 +47,7 @@ public class WithdrawUseCaseIdempotentTest {
     @BeforeEach
     void setUp() {
         LocalDateTime now = LocalDateTime.of(2025, 12, 16, 10, 0);
-        String accountNo = UUID.randomUUID().toString();
+        accountNo = UUID.randomUUID().toString();
         Account saved = accountRepository.save(
                 new Account(null, accountNo, balance, AccountStatus.ACTIVE, now, now)
         );
@@ -82,7 +84,7 @@ public class WithdrawUseCaseIdempotentTest {
                 try {
                     readyLatch.countDown();
                     startLatch.await();
-                    withdrawUseCase.execute(accountId, withdrawAmount, sameTransactionId);
+                    withdrawUseCase.execute(accountNo, withdrawAmount, sameTransactionId);
                     success.incrementAndGet();
                 } catch (Exception e) {
                     fail.incrementAndGet();
@@ -98,7 +100,7 @@ public class WithdrawUseCaseIdempotentTest {
 
         Account result = accountRepository.findById(accountId).orElseThrow();
         long historyCount = accountTransactionRepository.count();
-        boolean txExists = accountTransactionRepository.findByTransactionRequestId(sameTransactionId).isPresent();
+        Transaction transaction = accountTransactionRepository.findByTransactionRequestId(sameTransactionId).orElseThrow();
 
         assertThat(result.getBalance()).isEqualTo(balance - withdrawAmount);
 
@@ -113,7 +115,7 @@ public class WithdrawUseCaseIdempotentTest {
         System.out.println("- success=" + success.get());
         System.out.println("- fail=" + fail.get());
         System.out.println("- historyCount=" + historyCount);
-        System.out.println("- txExists=" + txExists);
+        System.out.println("- status=" + transaction.getTransactionStatus().name());
         System.out.println("========================================");
 
     }

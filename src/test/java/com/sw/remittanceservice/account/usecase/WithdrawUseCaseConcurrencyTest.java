@@ -35,7 +35,7 @@ public class WithdrawUseCaseConcurrencyTest {
 
     @Autowired
     WithdrawUseCase withdrawUseCase;
-
+    private String accountNo;
     private Long accountId;
     private final long balance = 1_000_000L;       // 100만원
     private final long withdrawAmount = 10_000L;   // 1만원
@@ -44,7 +44,7 @@ public class WithdrawUseCaseConcurrencyTest {
     @BeforeEach
     void setUp() {
         LocalDateTime now = LocalDateTime.of(2025, 12, 16, 10, 0);
-        String accountNo = UUID.randomUUID().toString();
+        accountNo = UUID.randomUUID().toString();
         Account saved = accountRepository.save(
                 new Account(null, accountNo, balance, AccountStatus.ACTIVE, now, now)
         );
@@ -79,7 +79,7 @@ public class WithdrawUseCaseConcurrencyTest {
                 try {
                     readyLatch.countDown();
                     startLatch.await();
-                    withdrawUseCase.execute(accountId, withdrawAmount, String.valueOf(UUID.randomUUID()));
+                    withdrawUseCase.execute(accountNo, withdrawAmount, String.valueOf(UUID.randomUUID()));
                     success.incrementAndGet();
                 } catch (Exception e) {
                     System.out.println(e);

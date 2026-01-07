@@ -158,4 +158,40 @@ public class Transaction {
         this.feeRate = feeResponse.rate();
         this.feeAppliedAt = LocalDateTime.now();
     }
+
+    public static Transaction create(Long accountId, String transactionRequestId, Long amount, Long balanceAfterTransaction) {
+        return new Transaction(
+                null,
+                accountId,
+                transactionRequestId,
+                TransactionType.WITHDRAW,
+                TransactionStatus.SUCCESS,
+                amount,
+                null,
+                0L,
+                null,
+                null,
+                null,
+                balanceAfterTransaction,
+                LocalDateTime.now()
+        );
+    }
+
+    public static Transaction init(String transactionRequestId, Long amount) {
+        return new Transaction(
+                null,
+                null,
+                transactionRequestId,
+                TransactionType.WITHDRAW,
+                TransactionStatus.PENDING,
+                amount,
+                null,
+                0L,
+                null,
+                null,
+                null,
+                0L,
+                LocalDateTime.now()
+        );
+    }
 }
