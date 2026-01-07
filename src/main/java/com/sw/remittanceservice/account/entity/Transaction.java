@@ -67,7 +67,7 @@ public class Transaction {
 
     @Column(name = "target_account_no")
     @Comment("상대방 계좌번호")
-    private Long targetAccountNo;
+    private String targetAccountNo;
 
     @Column(name = "balance_after_transaction", nullable = false)
     @Comment("거래 후 잔액")
@@ -76,106 +76,6 @@ public class Transaction {
     @Column(name = "created_at", nullable = false)
     @Comment("생성 일시")
     private LocalDateTime createdAt;
-
-    public static Transaction withdrawPending(
-            Long accountId,
-            String transactionRequestId,
-            Long amount
-    ) {
-        return new Transaction(
-                null,
-                accountId,
-                transactionRequestId,
-                TransactionType.WITHDRAW,
-                TransactionStatus.PENDING,
-                amount,
-                null,
-                0L,
-                null,
-                null,
-                null,
-                0L,
-                LocalDateTime.now()
-        );
-    }
-
-    public static Transaction depositPending(
-            Long accountId,
-            String transactionRequestId,
-            Long amount
-    ) {
-        return new Transaction(
-                null,
-                accountId,
-                transactionRequestId,
-                TransactionType.DEPOSIT,
-                TransactionStatus.PENDING,
-                amount,
-                null,
-                0L,
-                null,
-                null,
-                null,
-                0L,
-                LocalDateTime.now()
-        );
-    }
-
-    public static Transaction transferPending(
-            Long accountId,
-            Long targetAccountId,
-            String transactionRequestId,
-            Long amount
-    ) {
-        return new Transaction(
-                null,
-                accountId,
-                transactionRequestId,
-                TransactionType.TRANSFER,
-                TransactionStatus.PENDING,
-                amount,
-                null,
-                0L,
-                null,
-                null,
-                targetAccountId,
-                0L,
-                LocalDateTime.now()
-        );
-    }
-
-    public void success(long balanceAfter) {
-        this.transactionStatus = TransactionStatus.SUCCESS;
-        this.balanceAfterTransaction = balanceAfter;
-        this.fee = 0L;
-    }
-
-    public void success(long balanceAfter, long fee, FeeResponse feeResponse) {
-        this.transactionStatus = TransactionStatus.SUCCESS;
-        this.balanceAfterTransaction = balanceAfter;
-        this.fee = fee;
-        this.feePolicyType = feeResponse.type();
-        this.feeRate = feeResponse.rate();
-        this.feeAppliedAt = LocalDateTime.now();
-    }
-
-    public static Transaction create(Long accountId, String transactionRequestId, Long amount, Long balanceAfterTransaction) {
-        return new Transaction(
-                null,
-                accountId,
-                transactionRequestId,
-                TransactionType.WITHDRAW,
-                TransactionStatus.SUCCESS,
-                amount,
-                null,
-                0L,
-                null,
-                null,
-                null,
-                balanceAfterTransaction,
-                LocalDateTime.now()
-        );
-    }
 
     public static Transaction create(Account account, String transactionRequestId, Long amount, TransactionType transactionType) {
         return new Transaction(
@@ -209,6 +109,24 @@ public class Transaction {
                 null,
                 null,
                 0L,
+                LocalDateTime.now()
+        );
+    }
+
+    public static Transaction createTransfer(Account fromAccount, String toAccountNo, String transactionRequestId, Long amount, FeeResponse feeResponse) {
+        return new Transaction(
+                null,
+                fromAccount.getAccountId(),
+                transactionRequestId,
+                TransactionType.TRANSFER,
+                TransactionStatus.SUCCESS,
+                amount,
+                feeResponse.type(),
+                feeResponse.feeAmount(),
+                feeResponse.rate(),
+                feeResponse.requestedAt(),
+                toAccountNo,
+                fromAccount.getBalance(),
                 LocalDateTime.now()
         );
     }

@@ -1,10 +1,12 @@
 package com.sw.remittanceservice.account.usecase;
 
+import com.sw.remittanceservice.account.dto.TransactionResponse;
 import com.sw.remittanceservice.account.dto.TransferResponse;
 import com.sw.remittanceservice.account.entity.Account;
 import com.sw.remittanceservice.account.entity.AccountDailyLimitUsage;
 import com.sw.remittanceservice.account.entity.AccountLimitSetting;
 import com.sw.remittanceservice.account.entity.Transaction;
+import com.sw.remittanceservice.account.entity.enums.TransactionType;
 import com.sw.remittanceservice.account.repository.*;
 import com.sw.remittanceservice.account.usecase.policy.FeeCalculatorFinder;
 import com.sw.remittanceservice.account.usecase.policy.dto.FeeRequest;
@@ -36,56 +38,61 @@ public class TransferUseCase {
     private final FeeCalculatorFinder feeCalculatorFinder;
 
     @Transactional
-    public TransferResponse execute(Long fromAccountId, Long toAccountId, Long amount, String transactionRequestId) {
+    public TransferResponse execute(String fromAccountNo, String toAccountNo, Long amount, String transactionRequestId) {
 
-        if (fromAccountId.equals(toAccountId)) {
-            throw new CoreException(ErrorType.SAME_ACCOUNT_TRANSFER, toAccountId);
+        if (fromAccountNo.equals(toAccountNo)) {
+            throw new CoreException(ErrorType.SAME_ACCOUNT_TRANSFER, toAccountNo);
         }
-
-        Transaction transaction = Transaction.transferPending(fromAccountId, toAccountId, transactionRequestId, amount);
 
         if (!transactionRedisRepository.tryLock(transactionRequestId, 1)) {
-            return TransferResponse.from(
-                    accountTransactionRepository.findByTransactionRequestId(transactionRequestId).orElse(transaction)
-            );
+            Transaction transaction = accountTransactionRepository.findByTransactionRequestId(transactionRequestId)
+                    .orElse(Transaction.init(transactionRequestId, amount, TransactionType.TRANSFER));
+            return TransferResponse.from(transaction);
         }
 
-        accountTransactionRepository.save(transaction);
+        Account fromAccountInfo = accountRepository.findByAccountNo(fromAccountNo)
+                .orElseThrow(() -> new CoreException(ErrorType.ACCOUNT_NOT_FOUND, fromAccountNo));
 
-        AccountLimitSetting setting = accountLimitSettingRepository.findByAccountId(fromAccountId)
-                .orElseThrow(() -> new CoreException(ErrorType.ACCOUNT_LIMIT_SETTING_NOT_FOUND, fromAccountId));
+        Account toAccountInfo = accountRepository.findByAccountNo(toAccountNo)
+                .orElseThrow(() -> new CoreException(ErrorType.ACCOUNT_NOT_FOUND, toAccountNo));
 
-        Long firstId = Math.min(fromAccountId, toAccountId);
-        Long secondId = Math.max(fromAccountId, toAccountId);
 
-        Account firstAccount = accountRepository.findLockedByAccountId(firstId).orElseThrow();
-        Account secondAccount = accountRepository.findLockedByAccountId(secondId).orElseThrow();
+        Long firstId = Math.min(fromAccountInfo.getAccountId(), toAccountInfo.getAccountId());
+        Long secondId = Math.max(fromAccountInfo.getAccountId(), toAccountInfo.getAccountId());
 
-        Account fromAccount = fromAccountId.equals(firstId) ? firstAccount : secondAccount;
-        Account toAccount = toAccountId.equals(firstId) ? firstAccount : secondAccount;
+        Account firstLockedAccount = accountRepository.findLockedByAccountId(firstId)
+                .orElseThrow(() -> new CoreException(ErrorType.ACCOUNT_NOT_FOUND, firstId));
 
-        AccountDailyLimitUsage usage = getOrCreateUsage(fromAccountId, LocalDate.now());
+        Account secondLockedAccount = accountRepository.findLockedByAccountId(secondId)
+                .orElseThrow(() -> new CoreException(ErrorType.ACCOUNT_NOT_FOUND, secondId));
+
+        Account fromAccount = fromAccountInfo.getAccountId().equals(firstId) ? firstLockedAccount : secondLockedAccount;
+        Account toAccount = toAccountInfo.getAccountId().equals(firstId) ? firstLockedAccount : secondLockedAccount;
+
+
+        AccountDailyLimitUsage usage = getOrCreateUsage(fromAccount.getAccountId(), LocalDate.now());
+
+        AccountLimitSetting setting = accountLimitSettingRepository.findByAccountId(fromAccount.getAccountId())
+                .orElseThrow(() -> new CoreException(ErrorType.ACCOUNT_LIMIT_SETTING_NOT_FOUND, fromAccount.getAccountId()));
 
         if (usage.getTransferUsed() + amount > setting.getDailyTransferLimit()) {
             throw new CoreException(ErrorType.EXCEED_DAILY_TRANSFER_LIMIT, usage.getTransferUsed() + amount);
         }
 
-        FeeResponse feeResponse = feeCalculatorFinder.calculate(
-                new FeeRequest(amount, LocalDateTime.now())
-        );
+        FeeResponse feeResponse = feeCalculatorFinder.calculate(new FeeRequest(amount, LocalDateTime.now()));
 
-        long fee = feeResponse.feeAmount();
-        long totalWithdrawAmount = amount + fee;
-
-        fromAccount.withdraw(totalWithdrawAmount);
+        fromAccount.withdraw(amount + feeResponse.feeAmount());
         toAccount.deposit(amount);
 
         usage.addTransferUsed(amount);
 
-        Account savedFromAccount = accountRepository.save(fromAccount);
+        Account savedFrom = accountRepository.save(fromAccount);
         accountRepository.save(toAccount);
 
-        transaction.success(savedFromAccount.getBalance(), fee, feeResponse);
+        Transaction transaction = accountTransactionRepository.save(
+                Transaction.createTransfer(savedFrom, toAccount.getAccountNo(), transactionRequestId, amount, feeResponse)
+        );
+
         return TransferResponse.from(transaction);
     }
 
@@ -93,4 +100,5 @@ public class TransferUseCase {
         return accountDailyLimitUsageRepository.findByAccountIdAndLimitDate(accountId, today)
                 .orElseGet(() -> accountDailyLimitUsageRepository.save(AccountDailyLimitUsage.init(accountId, today)));
     }
+
 }

@@ -77,7 +77,6 @@ public class Account {
     }
 
 
-
     public void close() {
         this.accountStatus = AccountStatus.CLOSED;
         this.updatedAt = LocalDateTime.now();

@@ -58,7 +58,7 @@ public class AccountController {
 
     @PostMapping("/api/transfers")
     public ResponseEntity<TransferResponse> transfer(@RequestBody TransferRequest request) {
-        return ResponseEntity.ok(transferUseCase.execute(request.fromAccountId(), request.toAccountNo(), request.amount(), request.transactionId()));
+        return ResponseEntity.ok(transferUseCase.execute(request.fromAccountNo(), request.toAccountNo(), request.amount(), request.transactionRequestId()));
     }
 
 }

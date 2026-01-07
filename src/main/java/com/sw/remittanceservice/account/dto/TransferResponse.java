@@ -3,8 +3,7 @@ package com.sw.remittanceservice.account.dto;
 import com.sw.remittanceservice.account.entity.Transaction;
 
 public record TransferResponse(
-        Long fromAccountId,
-        Long toAccountNo,
+        String toAccountNo,
         Long amount,
         Long fee,
         Double feeRate,
@@ -13,7 +12,6 @@ public record TransferResponse(
 
     public static TransferResponse from(Transaction entity) {
         return new TransferResponse(
-                entity.getAccountId(),
                 entity.getTargetAccountNo(),
                 entity.getAmount(),
                 entity.getFee(),
