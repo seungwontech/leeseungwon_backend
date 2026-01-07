@@ -177,12 +177,30 @@ public class Transaction {
         );
     }
 
-    public static Transaction init(String transactionRequestId, Long amount) {
+    public static Transaction create(Account account, String transactionRequestId, Long amount, TransactionType transactionType) {
+        return new Transaction(
+                null,
+                account.getAccountId(),
+                transactionRequestId,
+                transactionType,
+                TransactionStatus.SUCCESS,
+                amount,
+                null,
+                0L,
+                null,
+                null,
+                null,
+                account.getBalance(),
+                LocalDateTime.now()
+        );
+    }
+
+    public static Transaction init(String transactionRequestId, Long amount, TransactionType type) {
         return new Transaction(
                 null,
                 null,
                 transactionRequestId,
-                TransactionType.WITHDRAW,
+                type,
                 TransactionStatus.PENDING,
                 amount,
                 null,

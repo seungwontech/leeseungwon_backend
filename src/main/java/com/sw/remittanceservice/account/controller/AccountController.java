@@ -49,7 +49,7 @@ public class AccountController {
 
     @PostMapping("/api/accounts/{accountNo}/deposit")
     public ResponseEntity<TransactionResponse> deposit(
-            @PathVariable Long accountNo,
+            @PathVariable String accountNo,
             @RequestBody AccountAmountRequest request)
     {
         return ResponseEntity.ok(depositUseCase.execute(accountNo, request.amount(), request.transactionRequestId()));

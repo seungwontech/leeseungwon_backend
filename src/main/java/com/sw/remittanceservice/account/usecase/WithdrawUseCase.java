@@ -5,6 +5,7 @@ import com.sw.remittanceservice.account.entity.Account;
 import com.sw.remittanceservice.account.entity.AccountDailyLimitUsage;
 import com.sw.remittanceservice.account.entity.AccountLimitSetting;
 import com.sw.remittanceservice.account.entity.Transaction;
+import com.sw.remittanceservice.account.entity.enums.TransactionType;
 import com.sw.remittanceservice.account.repository.*;
 import com.sw.remittanceservice.common.exception.CoreException;
 import com.sw.remittanceservice.common.exception.ErrorType;
@@ -33,7 +34,7 @@ public class WithdrawUseCase {
 
         if (!transactionRedisRepository.tryLock(transactionRequestId, 1)) {
             Transaction transaction = accountTransactionRepository.findByTransactionRequestId(transactionRequestId)
-                    .orElse(Transaction.init(transactionRequestId, amount));
+                    .orElse(Transaction.init(transactionRequestId, amount, TransactionType.WITHDRAW));
             return TransactionResponse.from(transaction);
         }
 
@@ -55,7 +56,7 @@ public class WithdrawUseCase {
         Account savedAccount = accountRepository.save(lockedAccount.withdraw(amount));
 
         Transaction transaction = accountTransactionRepository.save(
-                Transaction.create(accountId, transactionRequestId, amount, savedAccount.getBalance())
+                Transaction.create(savedAccount, transactionRequestId, amount, TransactionType.WITHDRAW)
         );
 
         return TransactionResponse.from(transaction);

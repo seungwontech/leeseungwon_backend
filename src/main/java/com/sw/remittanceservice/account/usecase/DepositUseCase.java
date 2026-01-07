@@ -3,6 +3,7 @@ package com.sw.remittanceservice.account.usecase;
 import com.sw.remittanceservice.account.dto.TransactionResponse;
 import com.sw.remittanceservice.account.entity.Account;
 import com.sw.remittanceservice.account.entity.Transaction;
+import com.sw.remittanceservice.account.entity.enums.TransactionType;
 import com.sw.remittanceservice.account.repository.*;
 import com.sw.remittanceservice.common.exception.CoreException;
 import com.sw.remittanceservice.common.exception.ErrorType;
@@ -21,26 +22,24 @@ public class DepositUseCase {
     private final TransactionRedisRepository transactionRedisRepository;
 
     @Transactional
-    public TransactionResponse execute(Long accountId, Long amount, String transactionRequestId) {
-        Transaction transaction = Transaction.depositPending(accountId, transactionRequestId, amount);
-
+    public TransactionResponse execute(String accountNo, Long amount, String transactionRequestId) {
+        TransactionType type = TransactionType.DEPOSIT;
         if (!transactionRedisRepository.tryLock(transactionRequestId, 1)) {
-            return TransactionResponse.from(
-                    accountTransactionRepository.findByTransactionRequestId(transactionRequestId).orElse(transaction)
-            );
+            Transaction transaction = accountTransactionRepository.findByTransactionRequestId(transactionRequestId)
+                    .orElse(Transaction.init(transactionRequestId, amount, TransactionType.DEPOSIT));
+            return TransactionResponse.from(transaction);
         }
 
-        accountTransactionRepository.save(transaction);
-
-        Account account = accountRepository.findLockedByAccountId(accountId)
-                .orElseThrow(() -> new CoreException(ErrorType.ACCOUNT_NOT_FOUND, accountId));
-
+        Account lockedAccount = accountRepository.findLockedByAccountNo(accountNo)
+                .orElseThrow(() -> new CoreException(ErrorType.ACCOUNT_NOT_FOUND, accountNo));
 
         Account savedAccount = accountRepository.save(
-                account.deposit(amount)
+                lockedAccount.deposit(amount)
         );
 
-        transaction.success(savedAccount.getBalance());
+        Transaction transaction = accountTransactionRepository.save(
+                Transaction.create(savedAccount, transactionRequestId, amount, TransactionType.DEPOSIT)
+        );
 
         return TransactionResponse.from(transaction);
     }
