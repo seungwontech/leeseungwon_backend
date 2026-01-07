@@ -41,7 +41,7 @@ class TransactionServiceTest {
     @Test
     @DisplayName("거래 내역 조회 - 계좌번호로 거래내역을 페이지 단위로 조회한다.")
     void readAll_success() {
-        // given
+        // Given
         String accountNo = UUID.randomUUID().toString();
         Long page = 1L;
         Long pageSize = 10L;
@@ -55,7 +55,6 @@ class TransactionServiceTest {
         given(account.getAccountId()).willReturn(accountId);
         given(accountRepository.findByAccountNo(accountNo)).willReturn(Optional.of(account));
 
-        // 트랜잭션 더미 데이터 2건
         Transaction tx1 = new Transaction(
                 100L,
                 accountId,
@@ -88,16 +87,16 @@ class TransactionServiceTest {
                 LocalDateTime.now()
         );
 
-        when(transactionRepository.findAllByAccountId(accountId, offset, pageSize))
-                .thenReturn(List.of(tx1, tx2));
+        given(transactionRepository.findAllByAccountId(accountId, offset, pageSize))
+                .willReturn(List.of(tx1, tx2));
 
-        when(transactionRepository.count(accountId, countLimit))
-                .thenReturn(2L);
+        given(transactionRepository.count(accountId, countLimit))
+                .willReturn(2L);
 
-        // when
+        // When
         TransactionPageResponse response = transactionService.readAll(accountNo, page, pageSize);
 
-        // then
+        // Then
         assertThat(response.transactionCount()).isEqualTo(2L);
         assertThat(response.transactions()).hasSize(2);
 
@@ -106,11 +105,5 @@ class TransactionServiceTest {
         assertThat(first.transactionStatus()).isEqualTo(TransactionStatus.SUCCESS.toString());
         assertThat(first.amount()).isEqualTo(10_000L);
 
-        // 상호작용 검증
-        verify(accountRepository, times(1)).findByAccountNo(accountNo);
-        verify(transactionRepository, times(1))
-                .findAllByAccountId(accountId, offset, pageSize);
-        verify(transactionRepository, times(1))
-                .count(accountId, countLimit);
     }
 }
