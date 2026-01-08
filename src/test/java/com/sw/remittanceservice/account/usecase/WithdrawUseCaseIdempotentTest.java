@@ -100,13 +100,13 @@ public class WithdrawUseCaseIdempotentTest {
 
         Account result = accountRepository.findById(accountId).orElseThrow();
         long historyCount = accountTransactionRepository.count();
-        Transaction transaction = accountTransactionRepository.findByTransactionRequestId(sameTransactionId).orElseThrow();
+        Transaction transaction = accountTransactionRepository.findByAccountIdAndTransactionRequestId(accountId, sameTransactionId).orElseThrow();
 
         assertThat(result.getBalance()).isEqualTo(balance - withdrawAmount);
 
         assertThat(fail.get()).isEqualTo(0);
         assertThat(accountTransactionRepository.count()).isEqualTo(1);
-        assertThat(accountTransactionRepository.findByTransactionRequestId(sameTransactionId)).isPresent();
+        assertThat(accountTransactionRepository.findByAccountIdAndTransactionRequestId(accountId, sameTransactionId)).isPresent();
 
         System.out.println("========================================");
         System.out.println("[TEST_END]");

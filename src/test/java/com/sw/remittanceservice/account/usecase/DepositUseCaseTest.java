@@ -94,11 +94,23 @@ class DepositUseCaseTest {
     void deposit_idempotent_lock_failed_and_tx_missing_returns_pending() {
         // Given
         String accountNo = UUID.randomUUID().toString();
+        Long accountId = 1L;
         Long amount = 10_000L;
         String transactionRequestId = UUID.randomUUID().toString();
+        LocalDateTime now = LocalDateTime.of(2026, 1, 1, 0, 0);
+
+        Account account = new Account(
+                accountId,
+                accountNo,
+                0L,
+                AccountStatus.ACTIVE,
+                now,
+                now
+        );
 
         given(transactionRedisRepository.tryLock(transactionRequestId, 1)).willReturn(false);
-        given(accountTransactionRepository.findByTransactionRequestId(transactionRequestId))
+        given(accountRepository.findByAccountNo(accountNo)).willReturn(Optional.of(account));
+        given(accountTransactionRepository.findByAccountIdAndTransactionRequestId(accountId, transactionRequestId))
                 .willReturn(Optional.empty());
 
         // When
