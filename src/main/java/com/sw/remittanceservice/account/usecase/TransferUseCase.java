@@ -43,8 +43,11 @@ public class TransferUseCase {
         }
 
         if (!transactionRedisRepository.tryLock(transactionRequestId, 1)) {
-            Transaction transaction = accountTransactionRepository.findByTransactionRequestId(transactionRequestId)
-                    .orElse(Transaction.init(transactionRequestId, amount, TransactionType.TRANSFER));
+            Account account = accountRepository.findByAccountNo(fromAccountNo).orElseThrow(()-> new CoreException(ErrorType.ACCOUNT_NOT_FOUND, fromAccountNo));
+            
+            Transaction transaction = accountTransactionRepository
+                    .findByAccountIdAndTransactionRequestId(account.getAccountId(), transactionRequestId)
+                    .orElse(Transaction.init(transactionRequestId, amount, TransactionType.WITHDRAW));
             return TransferResponse.from(transaction);
         }
 
@@ -53,7 +56,6 @@ public class TransferUseCase {
 
         Account toAccountInfo = accountRepository.findByAccountNo(toAccountNo)
                 .orElseThrow(() -> new CoreException(ErrorType.ACCOUNT_NOT_FOUND, toAccountNo));
-
 
         Long firstId = Math.min(fromAccountInfo.getAccountId(), toAccountInfo.getAccountId());
         Long secondId = Math.max(fromAccountInfo.getAccountId(), toAccountInfo.getAccountId());
@@ -79,19 +81,24 @@ public class TransferUseCase {
 
         FeeResponse feeResponse = feeCalculatorFinder.calculate(new FeeRequest(amount));
 
-        fromAccount.withdraw(amount + feeResponse.feeAmount());
-        toAccount.deposit(amount);
 
         usage.addTransferUsed(amount);
 
-        Account savedFrom = accountRepository.save(fromAccount);
-        accountRepository.save(toAccount);
+        Account updatedLockFromAccount = fromAccount.withdraw(amount + feeResponse.feeAmount());
+        Account updatedLockToAccount = toAccount.deposit(amount);
 
-        Transaction transaction = accountTransactionRepository.save(
-                Transaction.createTransfer(savedFrom, toAccount.getAccountNo(), transactionRequestId, amount, feeResponse)
+        Account savedFromAccount = accountRepository.save(updatedLockFromAccount);
+        Account savedToAccount = accountRepository.save(updatedLockToAccount);
+
+        Transaction transactionFromAccount = accountTransactionRepository.save(
+                Transaction.createTransferWithdraw(savedFromAccount, savedToAccount.getAccountNo(), transactionRequestId, amount, feeResponse)
         );
 
-        return TransferResponse.from(transaction);
+        accountTransactionRepository.save(
+                Transaction.createTransferDeposit(savedToAccount, savedFromAccount.getAccountNo(), transactionRequestId, amount)
+        );
+
+        return TransferResponse.from(transactionFromAccount);
     }
 
     private AccountDailyLimitUsage getOrCreateUsage(Long accountId, LocalDate today) {

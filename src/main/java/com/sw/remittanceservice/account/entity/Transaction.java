@@ -117,12 +117,12 @@ public class Transaction {
         );
     }
 
-    public static Transaction createTransfer(Account fromAccount, String toAccountNo, String transactionRequestId, Long amount, FeeResponse feeResponse) {
+    public static Transaction createTransferWithdraw(Account fromAccount, String toAccountNo, String transactionRequestId, Long amount, FeeResponse feeResponse) {
         return new Transaction(
                 null,
                 fromAccount.getAccountId(),
                 transactionRequestId,
-                TransactionType.TRANSFER,
+                TransactionType.WITHDRAW,
                 TransactionStatus.SUCCESS,
                 amount,
                 feeResponse.type(),
@@ -131,6 +131,24 @@ public class Transaction {
                 feeResponse.requestedAt(),
                 toAccountNo,
                 fromAccount.getBalance(),
+                LocalDateTime.now()
+        );
+    }
+
+    public static Transaction createTransferDeposit(Account toAccount, String fromAccountNo, String transactionRequestId, Long amount) {
+        return new Transaction(
+                null,
+                toAccount.getAccountId(),
+                transactionRequestId,
+                TransactionType.DEPOSIT,
+                TransactionStatus.SUCCESS,
+                amount,
+                null,
+                0L,
+                null,
+                null,
+                fromAccountNo,
+                toAccount.getBalance(),
                 LocalDateTime.now()
         );
     }
