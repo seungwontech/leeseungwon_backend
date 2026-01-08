@@ -23,7 +23,6 @@ public class DepositUseCase {
 
     @Transactional
     public TransactionResponse execute(String accountNo, Long amount, String transactionRequestId) {
-        TransactionType type = TransactionType.DEPOSIT;
         if (!transactionRedisRepository.tryLock(transactionRequestId, 1)) {
             Transaction transaction = accountTransactionRepository.findByTransactionRequestId(transactionRequestId)
                     .orElse(Transaction.init(transactionRequestId, amount, TransactionType.DEPOSIT));

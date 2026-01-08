@@ -1,6 +1,5 @@
 package com.sw.remittanceservice.account.usecase;
 
-import com.sw.remittanceservice.account.dto.TransactionResponse;
 import com.sw.remittanceservice.account.dto.TransferResponse;
 import com.sw.remittanceservice.account.entity.Account;
 import com.sw.remittanceservice.account.entity.AccountDailyLimitUsage;
@@ -18,7 +17,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 
 
 @RequiredArgsConstructor
