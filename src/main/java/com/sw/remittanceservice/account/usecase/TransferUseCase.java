@@ -43,22 +43,22 @@ public class TransferUseCase {
         }
 
         if (!transactionRedisRepository.tryLock(transactionRequestId, 1)) {
-            Account account = accountRepository.findByAccountNo(fromAccountNo).orElseThrow(()-> new CoreException(ErrorType.ACCOUNT_NOT_FOUND, fromAccountNo));
-            
+            Account account = accountRepository.findByAccountNo(fromAccountNo).orElseThrow(() -> new CoreException(ErrorType.ACCOUNT_NOT_FOUND, fromAccountNo));
+
             Transaction transaction = accountTransactionRepository
                     .findByAccountIdAndTransactionRequestId(account.getAccountId(), transactionRequestId)
                     .orElse(Transaction.init(transactionRequestId, amount, TransactionType.WITHDRAW));
             return TransferResponse.from(transaction);
         }
 
-        Account fromAccountInfo = accountRepository.findByAccountNo(fromAccountNo)
+        Long fromAccountId = accountRepository.findIdByAccountNo(fromAccountNo)
                 .orElseThrow(() -> new CoreException(ErrorType.ACCOUNT_NOT_FOUND, fromAccountNo));
 
-        Account toAccountInfo = accountRepository.findByAccountNo(toAccountNo)
+        Long toAccountId = accountRepository.findIdByAccountNo(toAccountNo)
                 .orElseThrow(() -> new CoreException(ErrorType.ACCOUNT_NOT_FOUND, toAccountNo));
 
-        Long firstId = Math.min(fromAccountInfo.getAccountId(), toAccountInfo.getAccountId());
-        Long secondId = Math.max(fromAccountInfo.getAccountId(), toAccountInfo.getAccountId());
+        Long firstId = Math.min(fromAccountId, toAccountId);
+        Long secondId = Math.max(fromAccountId, toAccountId);
 
         Account firstLockedAccount = accountRepository.findLockedByAccountId(firstId)
                 .orElseThrow(() -> new CoreException(ErrorType.ACCOUNT_NOT_FOUND, firstId));
@@ -66,12 +66,11 @@ public class TransferUseCase {
         Account secondLockedAccount = accountRepository.findLockedByAccountId(secondId)
                 .orElseThrow(() -> new CoreException(ErrorType.ACCOUNT_NOT_FOUND, secondId));
 
-        Account fromAccount = fromAccountInfo.getAccountId().equals(firstId) ? firstLockedAccount : secondLockedAccount;
-        Account toAccount = toAccountInfo.getAccountId().equals(firstId) ? firstLockedAccount : secondLockedAccount;
+        Account fromAccount = fromAccountId.equals(firstId) ? firstLockedAccount : secondLockedAccount;
+        Account toAccount = toAccountId.equals(firstId) ? firstLockedAccount : secondLockedAccount;
 
 
         AccountDailyLimitUsage usage = getOrCreateUsage(fromAccount.getAccountId(), LocalDate.now());
-
         AccountLimitSetting setting = accountLimitSettingRepository.findByAccountId(fromAccount.getAccountId())
                 .orElseThrow(() -> new CoreException(ErrorType.ACCOUNT_LIMIT_SETTING_NOT_FOUND, fromAccount.getAccountId()));
 
