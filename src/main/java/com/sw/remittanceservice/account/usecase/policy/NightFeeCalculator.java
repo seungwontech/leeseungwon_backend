@@ -22,13 +22,17 @@ public class NightFeeCalculator implements FeeCalculator {
 
     @Override
     public boolean applicable(FeeRequest request) {
-        LocalTime time = LocalTime.now();
-        return !time.isBefore(NIGHT_START) || time.isBefore(NIGHT_END);
+        return isNight(LocalTime.now());
     }
 
     @Override
     public FeeResponse calculate(FeeRequest request) {
         long fee = (long) (request.amount() * RATE);
         return new FeeResponse(FeePolicyType.NIGHT, RATE, fee, LocalDateTime.now());
+    }
+
+    public boolean isNight(LocalTime time) {
+        // 23:00 이후이거나 06:00 이전인 경우 (밤 11시 ~ 새벽 6시)
+        return !time.isBefore(NIGHT_START) || time.isBefore(NIGHT_END);
     }
 }
