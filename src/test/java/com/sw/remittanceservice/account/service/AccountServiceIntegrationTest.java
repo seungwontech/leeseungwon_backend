@@ -32,9 +32,8 @@ class AccountServiceIntegrationTest {
     @Test
     @DisplayName("계좌 개설")
     void create_account() {
-        AccountCreateRequest request = new AccountCreateRequest();
         // When
-        AccountResponse response = accountService.create(request);
+        AccountResponse response = accountService.create();
 
         // Then
         assertThat(response).isNotNull();

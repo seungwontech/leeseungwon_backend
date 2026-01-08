@@ -32,7 +32,7 @@ public class AccountService {
     }
 
     @Transactional
-    public AccountResponse create(AccountCreateRequest request) {
+    public AccountResponse create() {
         String accountNo = UUID.randomUUID().toString();
 
         Account account = accountRepository.save(

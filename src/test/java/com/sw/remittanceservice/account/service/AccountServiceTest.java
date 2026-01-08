@@ -68,10 +68,8 @@ class AccountServiceTest {
         given(accountLimitSettingRepository.save(any(AccountLimitSetting.class)))
                 .willReturn(savedSetting);
 
-        AccountCreateRequest request = new AccountCreateRequest();
-
         // When
-        AccountResponse response = accountService.create(request);
+        AccountResponse response = accountService.create();
 
         // Then
         assertThat(response).isNotNull();

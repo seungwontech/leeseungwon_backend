@@ -28,8 +28,8 @@ public class AccountController {
     }
 
     @PostMapping("/api/accounts")
-    public ResponseEntity<AccountResponse> create(@RequestBody AccountCreateRequest request) {
-        return ResponseEntity.ok(accountService.create(request));
+    public ResponseEntity<AccountResponse> create() {
+        return ResponseEntity.ok(accountService.create());
     }
 
     @DeleteMapping("/api/accounts/{accountNo}")
