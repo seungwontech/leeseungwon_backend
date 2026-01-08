@@ -75,7 +75,7 @@ class WithdrawUseCaseTest {
         given(accountLimitSettingRepository.findByAccountId(accountId)).willReturn(Optional.of(setting));
 
         // 존재한 경우
-        given(accountDailyLimitUsageRepository.findByAccountIdAndLimitDate(accountId, today)).willReturn(Optional.of(usage));
+        given(accountDailyLimitUsageRepository.findLockedByAccountIdAndLimitDate(accountId, today)).willReturn(Optional.of(usage));
 
         given(accountRepository.save(any(Account.class))).willReturn(savedAccount);
         given(accountTransactionRepository.save(any(Transaction.class))).willReturn(savedTransaction);
@@ -154,7 +154,7 @@ class WithdrawUseCaseTest {
         given(transactionRedisRepository.tryLock(transactionRequestId, 1)).willReturn(true);
         given(accountRepository.findLockedByAccountNo(accountNo)).willReturn(Optional.of(lockedAccount));
         given(accountLimitSettingRepository.findByAccountId(accountId)).willReturn(Optional.of(setting));
-        given(accountDailyLimitUsageRepository.findByAccountIdAndLimitDate(accountId, today)).willReturn(Optional.of(usage));
+        given(accountDailyLimitUsageRepository.findLockedByAccountIdAndLimitDate(accountId, today)).willReturn(Optional.of(usage));
 
         // When/Then
         CoreException e = assertThrows(CoreException.class,
@@ -207,7 +207,7 @@ class WithdrawUseCaseTest {
         given(accountLimitSettingRepository.findByAccountId(accountId)).willReturn(Optional.of(setting));
 
         // 존재 하지 않음
-        given(accountDailyLimitUsageRepository.findByAccountIdAndLimitDate(accountId, today)).willReturn(Optional.empty());
+        given(accountDailyLimitUsageRepository.findLockedByAccountIdAndLimitDate(accountId, today)).willReturn(Optional.empty());
         given(accountDailyLimitUsageRepository.save(any(AccountDailyLimitUsage.class))).willReturn(newUsage);
 
         given(accountRepository.save(any(Account.class))).willReturn(savedAccount);
@@ -220,7 +220,7 @@ class WithdrawUseCaseTest {
         assertThat(response.transactionStatus()).isEqualTo("SUCCESS");
         assertThat(response.balanceAfterTransaction()).isEqualTo(savedAccount.getBalance());
 
-        verify(accountDailyLimitUsageRepository, times(1)).findByAccountIdAndLimitDate(accountId, today);
+        verify(accountDailyLimitUsageRepository, times(1)).findLockedByAccountIdAndLimitDate(accountId, today);
         verify(accountDailyLimitUsageRepository, times(1)).save(any(AccountDailyLimitUsage.class));
     }
 }

@@ -56,4 +56,5 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long> 
 
     List<Transaction> findByTransactionRequestId(String txRequestId);
 
+    Long countByAccountId(Long accountId);
 }

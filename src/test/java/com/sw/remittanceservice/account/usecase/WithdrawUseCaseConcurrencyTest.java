@@ -96,12 +96,12 @@ public class WithdrawUseCaseConcurrencyTest {
         executorService.shutdown();
 
         Account result = accountRepository.findById(accountId).orElseThrow();
-        long historyCount = accountTransactionRepository.count();
+        Long historyCount = accountTransactionRepository.countByAccountId(accountId);
 
         assertThat(fail.get()).isEqualTo(0);
         assertThat(success.get()).isEqualTo(requestCount);
         assertThat(result.getBalance()).isEqualTo(0L);
-        assertThat(accountTransactionRepository.count()).isEqualTo(requestCount);
+        assertThat(historyCount).isEqualTo(requestCount);
 
         System.out.println("========================================");
         System.out.println("[TEST_END]");
