@@ -5,6 +5,8 @@ import com.sw.remittanceservice.account.usecase.policy.dto.FeeResponse;
 import com.sw.remittanceservice.account.usecase.policy.dto.enums.FeePolicyType;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDateTime;
+
 
 @Component
 public class DefaultFeeCalculator implements FeeCalculator {
@@ -24,6 +26,6 @@ public class DefaultFeeCalculator implements FeeCalculator {
     @Override
     public FeeResponse calculate(FeeRequest request) {
         long fee = (long) (request.amount() * RATE);
-        return new FeeResponse(FeePolicyType.DEFAULT, RATE, fee, request.requestedAt());
+        return new FeeResponse(FeePolicyType.DEFAULT, RATE, fee, LocalDateTime.now());
     }
 }

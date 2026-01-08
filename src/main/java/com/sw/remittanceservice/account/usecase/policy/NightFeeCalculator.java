@@ -5,6 +5,7 @@ import com.sw.remittanceservice.account.usecase.policy.dto.FeeResponse;
 import com.sw.remittanceservice.account.usecase.policy.dto.enums.FeePolicyType;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 
 @Component
@@ -21,13 +22,13 @@ public class NightFeeCalculator implements FeeCalculator {
 
     @Override
     public boolean applicable(FeeRequest request) {
-        LocalTime t = request.requestedAt().toLocalTime();
-        return !t.isBefore(NIGHT_START) || t.isBefore(NIGHT_END);
+        LocalTime time = LocalTime.now();
+        return !time.isBefore(NIGHT_START) || time.isBefore(NIGHT_END);
     }
 
     @Override
     public FeeResponse calculate(FeeRequest request) {
         long fee = (long) (request.amount() * RATE);
-        return new FeeResponse(FeePolicyType.NIGHT, RATE, fee, request.requestedAt());
+        return new FeeResponse(FeePolicyType.NIGHT, RATE, fee, LocalDateTime.now());
     }
 }

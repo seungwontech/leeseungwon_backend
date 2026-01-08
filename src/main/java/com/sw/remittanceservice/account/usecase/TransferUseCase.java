@@ -79,7 +79,7 @@ public class TransferUseCase {
             throw new CoreException(ErrorType.EXCEED_DAILY_TRANSFER_LIMIT, usage.getTransferUsed() + amount);
         }
 
-        FeeResponse feeResponse = feeCalculatorFinder.calculate(new FeeRequest(amount, LocalDateTime.now()));
+        FeeResponse feeResponse = feeCalculatorFinder.calculate(new FeeRequest(amount));
 
         fromAccount.withdraw(amount + feeResponse.feeAmount());
         toAccount.deposit(amount);
