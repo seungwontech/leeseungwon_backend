@@ -108,23 +108,6 @@ class TransferUseCaseTest {
         LocalDateTime now = LocalDateTime.of(2026, 1, 1, 0, 0);
         LocalDate today = LocalDate.now();
 
-        // 계좌 기본 정보 (락 걸리지 않은 조회용)
-        Account fromAccountInfo = new Account(
-                fromAccountId,
-                fromAccountNo,
-                500_000L,
-                AccountStatus.ACTIVE,
-                now,
-                now
-        );
-        Account toAccountInfo = new Account(
-                toAccountId,
-                toAccountNo,
-                0L,
-                AccountStatus.ACTIVE,
-                now,
-                now
-        );
 
         Account firstLockedAccount = new Account(
                 fromAccountId,
@@ -149,14 +132,14 @@ class TransferUseCaseTest {
 
         given(transactionRedisRepository.tryLock(txRequestId, 1)).willReturn(true);
 
-        given(accountRepository.findByAccountNo(fromAccountNo)).willReturn(Optional.of(fromAccountInfo));
-        given(accountRepository.findByAccountNo(toAccountNo)).willReturn(Optional.of(toAccountInfo));
+        given(accountRepository.findIdByAccountNo(fromAccountNo)).willReturn(Optional.of(fromAccountId));
+        given(accountRepository.findIdByAccountNo(toAccountNo)).willReturn(Optional.of(toAccountId));
 
         given(accountRepository.findLockedByAccountId(fromAccountId)).willReturn(Optional.of(firstLockedAccount));
         given(accountRepository.findLockedByAccountId(toAccountId)).willReturn(Optional.of(secondLockedAccount));
 
         // 일일 이체 한도 조회
-        given(accountDailyLimitUsageRepository.findByAccountIdAndLimitDate(fromAccountId, today))
+        given(accountDailyLimitUsageRepository.findLockedByAccountIdAndLimitDate(fromAccountId, today))
                 .willReturn(Optional.of(usage));
         given(usage.getTransferUsed()).willReturn(0L);
 
@@ -202,23 +185,6 @@ class TransferUseCaseTest {
         LocalDateTime now = LocalDateTime.of(2026, 1, 1, 0, 0);
         LocalDate today = LocalDate.now();
 
-        Account fromAccountInfo = new Account(
-                fromAccountId,
-                fromAccountNo,
-                50_000L,
-                AccountStatus.ACTIVE,
-                now,
-                now
-        );
-        Account toAccountInfo = new Account(
-                toAccountId,
-                toAccountNo,
-                0L,
-                AccountStatus.ACTIVE,
-                now,
-                now
-        );
-
         Account firstLockedAccount = new Account(
                 fromAccountId,
                 fromAccountNo,
@@ -241,13 +207,13 @@ class TransferUseCaseTest {
 
         given(transactionRedisRepository.tryLock(txRequestId, 1)).willReturn(true);
 
-        given(accountRepository.findByAccountNo(fromAccountNo)).willReturn(Optional.of(fromAccountInfo));
-        given(accountRepository.findByAccountNo(toAccountNo)).willReturn(Optional.of(toAccountInfo));
+        given(accountRepository.findIdByAccountNo(fromAccountNo)).willReturn(Optional.of(fromAccountId));
+        given(accountRepository.findIdByAccountNo(toAccountNo)).willReturn(Optional.of(toAccountId));
 
         given(accountRepository.findLockedByAccountId(fromAccountId)).willReturn(Optional.of(firstLockedAccount));
         given(accountRepository.findLockedByAccountId(toAccountId)).willReturn(Optional.of(secondLockedAccount));
 
-        given(accountDailyLimitUsageRepository.findByAccountIdAndLimitDate(fromAccountId, today))
+        given(accountDailyLimitUsageRepository.findLockedByAccountIdAndLimitDate(fromAccountId, today))
                 .willReturn(Optional.of(usage));
         given(usage.getTransferUsed()).willReturn(90_000L); // 이미 9만 사용
 
