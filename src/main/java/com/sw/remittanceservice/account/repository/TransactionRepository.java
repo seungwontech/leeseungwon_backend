@@ -53,4 +53,7 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long> 
             nativeQuery = true
     )
     Long count(@Param("accountId") Long accountId, @Param("limit") Long limit);
+
+    List<Transaction> findByTransactionRequestId(String txRequestId);
+
 }
