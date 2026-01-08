@@ -39,7 +39,6 @@ public class WithdrawUseCaseConcurrencyTest {
     private Long accountId;
     private final long balance = 1_000_000L;       // 100만원
     private final long withdrawAmount = 10_000L;   // 1만원
-    private final int requestCount = 100;          // 100개 요청
 
     @BeforeEach
     void setUp() {
@@ -65,6 +64,8 @@ public class WithdrawUseCaseConcurrencyTest {
     @Test
     @DisplayName("동시성: transactionId가 모두 다르면 모두 출금되어 0원이 된다.")
     void concurrent_withdraw_test() throws Exception {
+        // 100개 요청
+        int requestCount = 100;
         ExecutorService executorService = Executors.newFixedThreadPool(requestCount);
 
         CountDownLatch readyLatch = new CountDownLatch(requestCount);
@@ -82,7 +83,6 @@ public class WithdrawUseCaseConcurrencyTest {
                     withdrawUseCase.execute(accountNo, withdrawAmount, String.valueOf(UUID.randomUUID()));
                     success.incrementAndGet();
                 } catch (Exception e) {
-                    System.out.println(e);
                     fail.incrementAndGet();
                 } finally {
                     endLatch.countDown();

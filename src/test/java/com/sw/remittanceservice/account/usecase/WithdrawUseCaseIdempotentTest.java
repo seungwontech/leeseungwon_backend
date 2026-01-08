@@ -41,7 +41,6 @@ public class WithdrawUseCaseIdempotentTest {
     private Long accountId;
     private final long balance = 100_000;       // 10만원
     private final long withdrawAmount = 5_000L;   // 5천원
-    private final int requestCount = 10;          // 10개 요청
 
 
     @BeforeEach
@@ -68,6 +67,8 @@ public class WithdrawUseCaseIdempotentTest {
     @Test
     @DisplayName("멱등성: transactionId가 같으면 한번만 출금한다.")
     void concurrent_idempotent_test() throws Exception {
+        // 10개 요청
+        int requestCount = 10;
         ExecutorService executorService = Executors.newFixedThreadPool(requestCount);
 
         CountDownLatch readyLatch = new CountDownLatch(requestCount);

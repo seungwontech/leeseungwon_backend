@@ -1,6 +1,5 @@
 package com.sw.remittanceservice.account.service;
 
-import com.sw.remittanceservice.account.dto.AccountCreateRequest;
 import com.sw.remittanceservice.account.dto.AccountResponse;
 import com.sw.remittanceservice.account.entity.*;
 import com.sw.remittanceservice.account.repository.*;

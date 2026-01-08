@@ -1,6 +1,5 @@
 package com.sw.remittanceservice.account.service;
 
-import com.sw.remittanceservice.account.dto.AccountCreateRequest;
 import com.sw.remittanceservice.account.dto.AccountResponse;
 import com.sw.remittanceservice.account.entity.Account;
 import com.sw.remittanceservice.account.entity.AccountLimitSetting;
@@ -135,9 +134,7 @@ class AccountServiceTest {
 
 
         // When/Then
-        CoreException e = assertThrows(CoreException.class, () -> {
-            accountService.read(accountNo);
-        });
+        CoreException e = assertThrows(CoreException.class, () -> accountService.read(accountNo));
 
         assertThat(e.getErrorType()).isEqualTo(ErrorType.ACCOUNT_NOT_FOUND);
         verify(accountRepository, times(1)).findByAccountNo(accountNo);
