@@ -10,7 +10,7 @@ import java.util.Optional;
 
 
 public interface TransactionRepository extends JpaRepository<Transaction, Long> {
-    Optional<Transaction> findByTransactionRequestId(String transactionRequestId);
+    Optional<Transaction> findByAccountIdAndTransactionRequestId(Long accountId, String transactionRequestId);
 
     @Query(
             value = """

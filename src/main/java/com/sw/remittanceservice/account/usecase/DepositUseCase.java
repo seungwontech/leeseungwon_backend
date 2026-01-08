@@ -23,8 +23,13 @@ public class DepositUseCase {
 
     @Transactional
     public TransactionResponse execute(String accountNo, Long amount, String transactionRequestId) {
+
         if (!transactionRedisRepository.tryLock(transactionRequestId, 1)) {
-            Transaction transaction = accountTransactionRepository.findByTransactionRequestId(transactionRequestId)
+            Account account = accountRepository.findByAccountNo(accountNo)
+                    .orElseThrow(()-> new CoreException(ErrorType.ACCOUNT_NOT_FOUND, accountNo));
+
+            Transaction transaction = accountTransactionRepository
+                    .findByAccountIdAndTransactionRequestId(account.getAccountId(), transactionRequestId)
                     .orElse(Transaction.init(transactionRequestId, amount, TransactionType.DEPOSIT));
             return TransactionResponse.from(transaction);
         }

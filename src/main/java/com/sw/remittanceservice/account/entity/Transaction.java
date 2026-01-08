@@ -17,7 +17,11 @@ import java.time.LocalDateTime;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
 @Entity
-@Table(name = "transaction")
+@Table(name = "transaction",
+        uniqueConstraints = {
+                @UniqueConstraint(name = "uk_account_transaction_request", columnNames = {"account_id", "transaction_request_id"})
+        }
+)
 public class Transaction {
 
     @Id
@@ -30,7 +34,7 @@ public class Transaction {
     @Comment("계좌 아이디")
     private Long accountId;
 
-    @Column(name = "transaction_request_id", nullable = false, unique = true)
+    @Column(name = "transaction_request_id", nullable = false)
     @Comment("거래 요청 식별자 (중복 방지용)")
     private String transactionRequestId;
 
