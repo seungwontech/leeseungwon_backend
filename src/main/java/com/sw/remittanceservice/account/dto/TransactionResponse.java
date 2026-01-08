@@ -10,7 +10,7 @@ public record TransactionResponse(
         Long amount,
         String transactionType,
         String transactionStatus,
-        Long targetAccountNo,
+        String targetAccountNo,
         Double feeRate,
         LocalDateTime feeAppliedAt,
         LocalDateTime createdAt) {
