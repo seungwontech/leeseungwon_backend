@@ -45,6 +45,8 @@ public class WithdrawUseCase {
         Account lockedAccount = accountRepository.findLockedByAccountNo(accountNo)
                 .orElseThrow(() -> new CoreException(ErrorType.ACCOUNT_NOT_FOUND, accountNo));
 
+        lockedAccount.validateActive();
+
         Long accountId = lockedAccount.getAccountId();
 
         AccountLimitSetting setting = accountLimitSettingRepository.findByAccountId(accountId)

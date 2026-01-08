@@ -46,8 +46,11 @@ public class AccountService {
 
     @Transactional
     public void delete(String accountNo) {
-        accountRepository.findByAccountNo(accountNo)
-                .orElseThrow(() -> new CoreException(ErrorType.ACCOUNT_NOT_FOUND, accountNo))
-                .close();
+
+        Account account = accountRepository.findLockedByAccountNo(accountNo)
+                .orElseThrow(() -> new CoreException(ErrorType.ACCOUNT_NOT_FOUND, accountNo));
+
+        account.validateActive();
+        account.close();
     }
 }

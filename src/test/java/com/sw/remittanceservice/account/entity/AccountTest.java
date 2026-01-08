@@ -110,4 +110,29 @@ public class AccountTest {
         assertEquals(initialBalance, account.getBalance(), "입금 실패 시 잔액은 변하지 않아야 합니다.");
     }
 
+    @Test
+    @DisplayName("계좌 해지 성공")
+    void close_success() {
+        // When
+        account.close();
+
+        // Then
+        assertEquals(AccountStatus.CLOSED, account.getAccountStatus());
+        assertNotNull(account.getUpdatedAt());
+    }
+
+    @Test
+    @DisplayName("계좌 상태 검증 실패 - CLOSED 상태일 때 예외 발생")
+    void validateActive_failure_closed() {
+        // Given
+        account.close();
+
+        // When & Then
+        CoreException e = assertThrows(CoreException.class, () -> {
+            account.validateActive();
+        });
+
+        assertEquals(ErrorType.ACCOUNT_NOT_ACTIVE, e.getErrorType());
+    }
+
 }

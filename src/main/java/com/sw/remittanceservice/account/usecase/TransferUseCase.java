@@ -69,6 +69,8 @@ public class TransferUseCase {
         Account fromAccount = fromAccountId.equals(firstId) ? firstLockedAccount : secondLockedAccount;
         Account toAccount = toAccountId.equals(firstId) ? firstLockedAccount : secondLockedAccount;
 
+        fromAccount.validateActive();
+        toAccount.validateActive();
 
         AccountDailyLimitUsage usage = getOrCreateUsage(fromAccount.getAccountId(), LocalDate.now());
         AccountLimitSetting setting = accountLimitSettingRepository.findByAccountId(fromAccount.getAccountId())

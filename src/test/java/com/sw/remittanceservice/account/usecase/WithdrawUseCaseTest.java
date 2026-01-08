@@ -223,4 +223,39 @@ class WithdrawUseCaseTest {
         verify(accountDailyLimitUsageRepository, times(1)).findLockedByAccountIdAndLimitDate(accountId, today);
         verify(accountDailyLimitUsageRepository, times(1)).save(any(AccountDailyLimitUsage.class));
     }
+
+    @Test
+    @DisplayName("출금 실패 - 해지된 계좌인 경우 예외 발생")
+    void withdraw_fail_account_closed() {
+        // Given
+        String accountNo = UUID.randomUUID().toString();
+        Long accountId = 1L;
+        Long amount = 10_000L;
+        String transactionRequestId = UUID.randomUUID().toString();
+        LocalDateTime now = LocalDateTime.of(2026, 1, 1, 0, 0);
+
+        // CLOSED 상태의 계좌 생성
+        Account closedAccount = new Account(
+                accountId,
+                accountNo,
+                100_000L,
+                AccountStatus.CLOSED, // 해지된 상태
+                now,
+                now
+        );
+
+        given(transactionRedisRepository.tryLock(transactionRequestId, 1)).willReturn(true);
+        given(accountRepository.findLockedByAccountNo(accountNo)).willReturn(Optional.of(closedAccount));
+
+        // When/Then
+        CoreException e = assertThrows(CoreException.class,
+                () -> withdrawUseCase.execute(accountNo, amount, transactionRequestId));
+
+        assertThat(e.getErrorType()).isEqualTo(ErrorType.ACCOUNT_NOT_ACTIVE);
+
+        // 계좌가 해지되었으므로 출금 및 트랜잭션 저장이 발생하면 안 됨
+        verify(accountRepository, never()).save(any());
+        verify(accountTransactionRepository, never()).save(any());
+        verify(accountDailyLimitUsageRepository, never()).save(any());
+    }
 }

@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 @Getter
 @RequiredArgsConstructor
 public enum ErrorType {
+    ACCOUNT_NOT_ACTIVE(ErrorCode.BAD_REQUEST, "사용할 수 없는 계좌 상태입니다."),
     TX_NOT_FOUND(ErrorCode.NOT_FOUND, "트랜잭션을 찾을 수 없습니다."),
     ACCOUNT_NOT_FOUND(ErrorCode.NOT_FOUND, "계좌을 찾을 수 없습니다."),
     ACCOUNT_LIMIT_SETTING_NOT_FOUND(ErrorCode.NOT_FOUND, "계좌 한도 설정을 찾을 수 없습니다."),

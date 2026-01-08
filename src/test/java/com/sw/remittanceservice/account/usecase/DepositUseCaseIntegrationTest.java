@@ -20,7 +20,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -116,6 +115,44 @@ public class DepositUseCaseIntegrationTest {
         // Then
         assertThat(e.getErrorType()).isEqualTo(ErrorType.ACCOUNT_NOT_FOUND);
 
+        List<Transaction> txList = transactionRepository.findByTransactionRequestId(transactionRequestId);
+        assertThat(txList).isEmpty();
+    }
+
+    @Test
+    @DisplayName("입금 실패 - 해지된 계좌에 입금 시도 시 예외가 발생하고 데이터가 보존된다")
+    void deposit_fail_account_closed_integration() {
+        // Given
+        String accountNo = UUID.randomUUID().toString();
+        Long amount = 5_000L;
+        String transactionRequestId = UUID.randomUUID().toString();
+        LocalDateTime now = LocalDateTime.now();
+
+        // 1. 해지된 상태(CLOSED)의 계좌 미리 저장
+        Account closedAccount = accountRepository.save(new Account(
+                null,
+                accountNo,
+                100_000L,
+                AccountStatus.CLOSED, // 해지 상태
+                now,
+                now
+        ));
+
+        given(transactionRedisRepository.tryLock(transactionRequestId, 1)).willReturn(true);
+
+        // When & Then
+        CoreException e = assertThrows(CoreException.class,
+                () -> depositUseCase.execute(accountNo, amount, transactionRequestId));
+
+        // 에러 타입 검증
+        assertThat(e.getErrorType()).isEqualTo(ErrorType.ACCOUNT_NOT_ACTIVE);
+
+        // DB 재조회 후 데이터 불변성 검증
+        Account after = accountRepository.findByAccountNo(accountNo).orElseThrow();
+        assertThat(after.getBalance()).isEqualTo(100_000L); // 잔액이 변하지 않아야 함
+        assertThat(after.getAccountStatus()).isEqualTo(AccountStatus.CLOSED);
+
+        // 거래 내역이 저장되지 않았는지 검증
         List<Transaction> txList = transactionRepository.findByTransactionRequestId(transactionRequestId);
         assertThat(txList).isEmpty();
     }

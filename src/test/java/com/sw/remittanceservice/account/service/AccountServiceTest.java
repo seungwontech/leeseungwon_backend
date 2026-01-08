@@ -168,13 +168,13 @@ class AccountServiceTest {
         // Given
         String accountNo = UUID.randomUUID().toString();
         Account account = mock(Account.class);
-        given(accountRepository.findByAccountNo(accountNo)).willReturn(Optional.of(account));
+        given(accountRepository.findLockedByAccountNo(accountNo)).willReturn(Optional.of(account));
 
         // When
         accountService.delete(accountNo);
 
         // Then
-        verify(accountRepository, times(1)).findByAccountNo(accountNo);
+        verify(accountRepository, times(1)).findLockedByAccountNo(accountNo);
         verify(account, times(1)).close();
     }
 
@@ -184,13 +184,38 @@ class AccountServiceTest {
         // Given
         String accountNo = UUID.randomUUID().toString();
         Account account = mock(Account.class);
-        given(accountRepository.findByAccountNo(accountNo)).willReturn(Optional.empty());
+        given(accountRepository.findLockedByAccountNo(accountNo)).willReturn(Optional.empty());
 
         // When/Then
         CoreException e = assertThrows(CoreException.class, () -> accountService.delete(accountNo));
         assertThat(e.getErrorType()).isEqualTo(ErrorType.ACCOUNT_NOT_FOUND);
 
-        verify(accountRepository, times(1)).findByAccountNo(accountNo);
+        verify(accountRepository, times(1)).findLockedByAccountNo(accountNo);
         verify(account, never()).close();
+    }
+
+    @Test
+    @DisplayName("계좌 삭제 실패 - 이미 해지된 계좌인 경우 예외 발생")
+    void delete_account_fail_already_closed() {
+        // Given
+        Long accountId = 1L;
+        String accountNo = UUID.randomUUID().toString();
+        LocalDateTime now = LocalDateTime.of(2025, 12, 30, 0, 0);
+        Account account = new Account(
+                accountId,
+                accountNo,
+                10_000L,
+                AccountStatus.CLOSED,
+                now,
+                now
+        );
+
+        given(accountRepository.findLockedByAccountNo(accountNo)).willReturn(Optional.of(account));
+
+        // When & Then
+        CoreException e = assertThrows(CoreException.class, () -> accountService.delete(accountNo));
+        assertThat(e.getErrorType()).isEqualTo(ErrorType.ACCOUNT_NOT_ACTIVE);
+
+        verify(accountRepository, times(1)).findLockedByAccountNo(accountNo);
     }
 }

@@ -81,4 +81,10 @@ public class Account {
         this.accountStatus = AccountStatus.CLOSED;
         this.updatedAt = LocalDateTime.now();
     }
+
+    public void validateActive() {
+        if (this.accountStatus == AccountStatus.CLOSED) {
+            throw new CoreException(ErrorType.ACCOUNT_NOT_ACTIVE, this.accountNo);
+        }
+    }
 }

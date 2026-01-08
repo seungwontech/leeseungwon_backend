@@ -192,4 +192,49 @@ public class WithdrawUseCaseIntegrationTest {
         assertThat(txList).isEmpty();
     }
 
+    @Test
+    @DisplayName("출금 실패 - 해지된 계좌에서 출금 시도 시 예외 발생 및 데이터 롤백")
+    void withdraw_fail_account_closed_integration() {
+        // Given
+        String accountNo = UUID.randomUUID().toString();
+        Long amount = 10_000L;
+        String txRequestId = UUID.randomUUID().toString();
+        LocalDateTime now = LocalDateTime.now();
+
+        Account closedAccount = accountRepository.save(new Account(
+                null,
+                accountNo,
+                100_000L,
+                AccountStatus.CLOSED, // 해지 상태
+                now,
+                now
+        ));
+
+        accountLimitSettingRepository.save(
+                AccountLimitSetting.defaultOf(closedAccount.getAccountId())
+        );
+
+        given(transactionRedisRepository.tryLock(txRequestId, 1)).willReturn(true);
+
+        // When
+        CoreException e = assertThrows(CoreException.class,
+                () -> withdrawUseCase.execute(accountNo, amount, txRequestId));
+
+        // Then
+        assertThat(e.getErrorType()).isEqualTo(ErrorType.ACCOUNT_NOT_ACTIVE);
+
+        Account after = accountRepository.findById(closedAccount.getAccountId()).orElseThrow();
+        assertThat(after.getBalance()).isEqualTo(100_000L); // 잔액 그대로
+        assertThat(after.getAccountStatus()).isEqualTo(AccountStatus.CLOSED);
+
+        // 거래 내역이 저장되지 않았는지 검증
+        List<Transaction> txList = transactionRepository.findByTransactionRequestId(txRequestId);
+        assertThat(txList).isEmpty();
+
+        // 일일 사용량 레코드가 생성되거나 변경되지 않았는지 검증
+        boolean usageExists = accountDailyLimitUsageRepository
+                .findByAccountIdAndLimitDate(closedAccount.getAccountId(), LocalDate.now())
+                .isPresent();
+        assertThat(usageExists).isFalse();
+    }
 }

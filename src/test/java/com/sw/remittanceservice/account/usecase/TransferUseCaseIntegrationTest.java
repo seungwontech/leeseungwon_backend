@@ -207,4 +207,78 @@ public class TransferUseCaseIntegrationTest {
                 transactionRepository.findByTransactionRequestId(txRequestId);
         assertThat(txList).isEmpty();
     }
+
+    @Test
+    @DisplayName("이체 실패 - 보내는 계좌가 해지된 상태인 경우 예외 발생 및 트랜잭션 롤백")
+    void transfer_fail_from_account_closed_integration() {
+        // Given
+        String fromAccountNo = UUID.randomUUID().toString();
+        String toAccountNo = UUID.randomUUID().toString();
+        Long amount = 50_000L;
+        String txRequestId = UUID.randomUUID().toString();
+        LocalDateTime now = LocalDateTime.now();
+
+        // 1. 보내는 계좌(CLOSED), 받는 계좌(ACTIVE) 생성 및 저장
+        Account fromAccount = accountRepository.save(new Account(
+                null, fromAccountNo, 100_000L, AccountStatus.CLOSED, now, now
+        ));
+        Account toAccount = accountRepository.save(new Account(
+                null, toAccountNo, 10_000L, AccountStatus.ACTIVE, now, now
+        ));
+
+        given(transactionRedisRepository.tryLock(txRequestId, 1)).willReturn(true);
+
+        // When & Then
+        CoreException e = assertThrows(CoreException.class,
+                () -> transferUseCase.execute(fromAccountNo, toAccountNo, amount, txRequestId));
+
+        assertThat(e.getErrorType()).isEqualTo(ErrorType.ACCOUNT_NOT_ACTIVE);
+
+        // 데이터 정합성 검증 (롤백 확인)
+        Account fromAfter = accountRepository.findById(fromAccount.getAccountId()).orElseThrow();
+        Account toAfter = accountRepository.findById(toAccount.getAccountId()).orElseThrow();
+
+        assertThat(fromAfter.getBalance()).isEqualTo(100_000L); // 잔액 불변
+        assertThat(toAfter.getBalance()).isEqualTo(10_000L);   // 잔액 불변
+
+        // 거래 내역이 저장되지 않았는지 확인
+        assertThat(transactionRepository.findByTransactionRequestId(txRequestId)).isEmpty();
+    }
+
+    @Test
+    @DisplayName("이체 실패 - 받는 계좌가 해지된 상태인 경우 예외 발생 및 트랜잭션 롤백")
+    void transfer_fail_to_account_closed_integration() {
+        // Given
+        String fromAccountNo = UUID.randomUUID().toString();
+        String toAccountNo = UUID.randomUUID().toString();
+        Long amount = 50_000L;
+        String txRequestId = UUID.randomUUID().toString();
+        LocalDateTime now = LocalDateTime.now();
+
+        // 1. 보내는 계좌(ACTIVE), 받는 계좌(CLOSED) 생성 및 저장
+        Account fromAccount = accountRepository.save(new Account(
+                null, fromAccountNo, 100_000L, AccountStatus.ACTIVE, now, now
+        ));
+        Account toAccount = accountRepository.save(new Account(
+                null, toAccountNo, 10_000L, AccountStatus.CLOSED, now, now
+        ));
+
+        // 한도 설정 (한도 체크 로직 통과를 위해 필요)
+        accountLimitSettingRepository.save(AccountLimitSetting.defaultOf(fromAccount.getAccountId()));
+
+        given(transactionRedisRepository.tryLock(txRequestId, 1)).willReturn(true);
+
+        // When & Then
+        CoreException e = assertThrows(CoreException.class,
+                () -> transferUseCase.execute(fromAccountNo, toAccountNo, amount, txRequestId));
+
+        assertThat(e.getErrorType()).isEqualTo(ErrorType.ACCOUNT_NOT_ACTIVE);
+
+        // 잔액 변화 없음 확인
+        assertThat(accountRepository.findById(fromAccount.getAccountId()).get().getBalance()).isEqualTo(100_000L);
+        assertThat(accountRepository.findById(toAccount.getAccountId()).get().getBalance()).isEqualTo(10_000L);
+
+        // 거래 내역 미생성 확인
+        assertThat(transactionRepository.findByTransactionRequestId(txRequestId)).isEmpty();
+    }
 }

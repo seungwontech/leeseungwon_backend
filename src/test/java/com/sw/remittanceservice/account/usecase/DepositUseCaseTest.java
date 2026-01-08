@@ -141,4 +141,37 @@ class DepositUseCaseTest {
         assertThat(e.getErrorType()).isEqualTo(ErrorType.ACCOUNT_NOT_FOUND);
     }
 
+    @Test
+    @DisplayName("입금 실패 - 해지된 계좌")
+    void deposit_fail_account_closed() {
+        // Given
+        String accountNo = UUID.randomUUID().toString();
+        Long amount = 10_000L;
+        String transactionRequestId = UUID.randomUUID().toString();
+        LocalDateTime now = LocalDateTime.of(2026, 1, 1, 0, 0);
+
+        // CLOSED 상태의 계좌 생성
+        Account closedAccount = new Account(
+                1L,
+                accountNo,
+                0L,
+                AccountStatus.CLOSED, // 상태가 CLOSED
+                now,
+                now
+        );
+
+        given(transactionRedisRepository.tryLock(transactionRequestId, 1)).willReturn(true);
+        given(accountRepository.findLockedByAccountNo(accountNo)).willReturn(Optional.of(closedAccount));
+
+        // When/Then
+        CoreException e = assertThrows(CoreException.class,
+                () -> depositUseCase.execute(accountNo, amount, transactionRequestId));
+
+        assertThat(e.getErrorType()).isEqualTo(ErrorType.ACCOUNT_NOT_ACTIVE);
+
+        // 중요: 계좌가 닫혀있으면 DB 저장이 절대 일어나면 안 됨
+        verify(accountRepository, never()).save(any());
+        verify(accountTransactionRepository, never()).save(any());
+    }
+
 }

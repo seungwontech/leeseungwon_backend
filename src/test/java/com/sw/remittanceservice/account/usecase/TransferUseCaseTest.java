@@ -228,4 +228,65 @@ class TransferUseCaseTest {
         assertThat(e.getErrorType()).isEqualTo(ErrorType.EXCEED_DAILY_TRANSFER_LIMIT);
     }
 
+    @Test
+    @DisplayName("이체 실패 - 보내는 계좌가 해지된 상태인 경우 예외 발생")
+    void transfer_fail_from_account_closed() {
+        // Given
+        String fromAccountNo = UUID.randomUUID().toString();
+        String toAccountNo = UUID.randomUUID().toString();
+        Long fromAccountId = 1L;
+        Long toAccountId = 2L;
+        Long amount = 10_000L;
+        String txRequestId = UUID.randomUUID().toString();
+        LocalDateTime now = LocalDateTime.of(2026, 1, 1, 0, 0);
+
+        // 보내는 계좌를 CLOSED 상태로 설정
+        Account fromAccount = new Account(fromAccountId, fromAccountNo, 100_000L, AccountStatus.CLOSED, now, now);
+        Account toAccount = new Account(toAccountId, toAccountNo, 50_000L, AccountStatus.ACTIVE, now, now);
+
+        given(transactionRedisRepository.tryLock(txRequestId, 1)).willReturn(true);
+        given(accountRepository.findIdByAccountNo(fromAccountNo)).willReturn(Optional.of(fromAccountId));
+        given(accountRepository.findIdByAccountNo(toAccountNo)).willReturn(Optional.of(toAccountId));
+
+        given(accountRepository.findLockedByAccountId(fromAccountId)).willReturn(Optional.of(fromAccount));
+        given(accountRepository.findLockedByAccountId(toAccountId)).willReturn(Optional.of(toAccount));
+
+        // When & Then
+        CoreException e = assertThrows(CoreException.class,
+                () -> transferUseCase.execute(fromAccountNo, toAccountNo, amount, txRequestId));
+
+        assertThat(e.getErrorType()).isEqualTo(ErrorType.ACCOUNT_NOT_ACTIVE);
+        verify(accountRepository, never()).save(any()); // 저장이 호출되지 않아야 함
+    }
+
+    @Test
+    @DisplayName("이체 실패 - 받는 계좌가 해지된 상태인 경우 예외 발생")
+    void transfer_fail_to_account_closed() {
+        // Given
+        String fromAccountNo = UUID.randomUUID().toString();
+        String toAccountNo = UUID.randomUUID().toString();
+        Long fromAccountId = 1L;
+        Long toAccountId = 2L;
+        Long amount = 10_000L;
+        String txRequestId = UUID.randomUUID().toString();
+        LocalDateTime now = LocalDateTime.of(2026, 1, 1, 0, 0);
+
+        // 받는 계좌를 CLOSED 상태로 설정
+        Account fromAccount = new Account(fromAccountId, fromAccountNo, 100_000L, AccountStatus.ACTIVE, now, now);
+        Account toAccount = new Account(toAccountId, toAccountNo, 50_000L, AccountStatus.CLOSED, now, now);
+
+        given(transactionRedisRepository.tryLock(txRequestId, 1)).willReturn(true);
+        given(accountRepository.findIdByAccountNo(fromAccountNo)).willReturn(Optional.of(fromAccountId));
+        given(accountRepository.findIdByAccountNo(toAccountNo)).willReturn(Optional.of(toAccountId));
+
+        given(accountRepository.findLockedByAccountId(fromAccountId)).willReturn(Optional.of(fromAccount));
+        given(accountRepository.findLockedByAccountId(toAccountId)).willReturn(Optional.of(toAccount));
+
+        // When & Then
+        CoreException e = assertThrows(CoreException.class,
+                () -> transferUseCase.execute(fromAccountNo, toAccountNo, amount, txRequestId));
+
+        assertThat(e.getErrorType()).isEqualTo(ErrorType.ACCOUNT_NOT_ACTIVE);
+        verify(accountRepository, never()).save(any());
+    }
 }
