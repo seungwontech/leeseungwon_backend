@@ -82,6 +82,7 @@ DELETE /api/accounts/{accountNo}
 
 - Response: 204 No Content
 - `CLOSED` 상태값으로 논리적 삭제 (Soft Delete)
+- 해지된 계좌(CLOSED)는 모든 입금, 출금, 이체 거래가 즉시 차단
 
 ### 2. 입금/출금/이체
 
@@ -169,6 +170,7 @@ GET /api/accounts/{accountNo}/transactions?page={page}&pageSize={pageSize}
 
 - 계좌의 현재 잔액(balance)과 상태(account_status)를 저장합니다.
 - 삭제는 물리 삭제가 아닌 Soft Delete로 처리하며 CLOSED 상태로 변경됩니다.
+- 모든 금융 거래(입금/출금/이체) 시 계좌 상태를 검증하며, ACTIVE가 아닌 경우 오류를 반환합니다.
 - 동시 입금/출금/이체 시 잔액 정합성을 위해 PESSIMISTIC_WRITE(FOR UPDATE)로 조회 후 갱신합니다.
 
 컬럼 
