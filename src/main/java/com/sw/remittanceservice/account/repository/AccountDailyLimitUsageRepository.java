@@ -13,6 +13,8 @@ import java.util.Optional;
 
 public interface AccountDailyLimitUsageRepository extends JpaRepository<AccountDailyLimitUsage, Long> {
     @Lock(LockModeType.PESSIMISTIC_WRITE)
+    Optional<AccountDailyLimitUsage> findLockedByAccountIdAndLimitDate(Long accountId, LocalDate limitDate);
+
     Optional<AccountDailyLimitUsage> findByAccountIdAndLimitDate(Long accountId, LocalDate limitDate);
 
     @Query(

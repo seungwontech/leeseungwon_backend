@@ -68,7 +68,7 @@ public class WithdrawUseCase {
     }
 
     private AccountDailyLimitUsage getOrCreateUsage(Long accountId, LocalDate today) {
-        return accountDailyLimitUsageRepository.findByAccountIdAndLimitDate(accountId, today)
+        return accountDailyLimitUsageRepository.findLockedByAccountIdAndLimitDate(accountId, today)
                 .orElseGet(() -> accountDailyLimitUsageRepository.save(AccountDailyLimitUsage.init(accountId, today)));
     }
 }
