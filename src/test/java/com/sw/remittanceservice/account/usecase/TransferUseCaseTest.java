@@ -189,4 +189,77 @@ class TransferUseCaseTest {
         verify(accountTransactionRepository, times(2)).save(any(Transaction.class));
     }
 
+    @Test
+    @DisplayName("이체 실패 - 일일 이체 한도 초과")
+    void transfer_fail_exceed_daily_limit() {
+        // Given
+        String fromAccountNo = UUID.randomUUID().toString();
+        String toAccountNo = UUID.randomUUID().toString();
+        Long fromAccountId = 1L;
+        Long toAccountId = 2L;
+        Long amount = 20_000L;
+        String txRequestId = UUID.randomUUID().toString();
+        LocalDateTime now = LocalDateTime.of(2026, 1, 1, 0, 0);
+        LocalDate today = LocalDate.now();
+
+        Account fromAccountInfo = new Account(
+                fromAccountId,
+                fromAccountNo,
+                50_000L,
+                AccountStatus.ACTIVE,
+                now,
+                now
+        );
+        Account toAccountInfo = new Account(
+                toAccountId,
+                toAccountNo,
+                0L,
+                AccountStatus.ACTIVE,
+                now,
+                now
+        );
+
+        Account firstLockedAccount = new Account(
+                fromAccountId,
+                fromAccountNo,
+                50_000L,
+                AccountStatus.ACTIVE,
+                now,
+                now
+        );
+        Account secondLockedAccount = new Account(
+                toAccountId,
+                toAccountNo,
+                0L,
+                AccountStatus.ACTIVE,
+                now,
+                now
+        );
+
+        AccountDailyLimitUsage usage = mock(AccountDailyLimitUsage.class);
+        AccountLimitSetting setting = mock(AccountLimitSetting.class);
+
+        given(transactionRedisRepository.tryLock(txRequestId, 1)).willReturn(true);
+
+        given(accountRepository.findByAccountNo(fromAccountNo)).willReturn(Optional.of(fromAccountInfo));
+        given(accountRepository.findByAccountNo(toAccountNo)).willReturn(Optional.of(toAccountInfo));
+
+        given(accountRepository.findLockedByAccountId(fromAccountId)).willReturn(Optional.of(firstLockedAccount));
+        given(accountRepository.findLockedByAccountId(toAccountId)).willReturn(Optional.of(secondLockedAccount));
+
+        given(accountDailyLimitUsageRepository.findByAccountIdAndLimitDate(fromAccountId, today))
+                .willReturn(Optional.of(usage));
+        given(usage.getTransferUsed()).willReturn(90_000L); // 이미 9만 사용
+
+        given(accountLimitSettingRepository.findByAccountId(fromAccountId))
+                .willReturn(Optional.of(setting));
+        given(setting.getDailyTransferLimit()).willReturn(100_000L); // 한도 10만
+
+        // When & Then
+        CoreException e = assertThrows(CoreException.class,
+                () -> transferUseCase.execute(fromAccountNo, toAccountNo, amount, txRequestId));
+
+        assertThat(e.getErrorType()).isEqualTo(ErrorType.EXCEED_DAILY_TRANSFER_LIMIT);
+    }
+
 }
