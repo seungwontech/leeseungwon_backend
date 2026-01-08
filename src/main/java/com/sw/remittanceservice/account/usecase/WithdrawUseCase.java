@@ -53,7 +53,8 @@ public class WithdrawUseCase {
         }
 
         usage.addWithdrawUsed(amount);
-        Account savedAccount = accountRepository.save(lockedAccount.withdraw(amount));
+        Account updatedLockAccount = lockedAccount.withdraw(amount);
+        Account savedAccount = accountRepository.save(updatedLockAccount);
 
         Transaction transaction = accountTransactionRepository.save(
                 Transaction.create(savedAccount, transactionRequestId, amount, TransactionType.WITHDRAW)

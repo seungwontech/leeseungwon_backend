@@ -33,9 +33,8 @@ public class DepositUseCase {
         Account lockedAccount = accountRepository.findLockedByAccountNo(accountNo)
                 .orElseThrow(() -> new CoreException(ErrorType.ACCOUNT_NOT_FOUND, accountNo));
 
-        Account savedAccount = accountRepository.save(
-                lockedAccount.deposit(amount)
-        );
+        Account updatedLockAccount = lockedAccount.deposit(amount);
+        Account savedAccount = accountRepository.save(updatedLockAccount);
 
         Transaction transaction = accountTransactionRepository.save(
                 Transaction.create(savedAccount, transactionRequestId, amount, TransactionType.DEPOSIT)
